@@ -7,28 +7,39 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: () => import('../views/HomeView.vue'),
+      component: () => import('@/views/HomeView.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/login',
       name: 'login',
-      component: () => import('../views/LoginView.vue'),
+      component: () => import('@/views/LoginView.vue'),
     },
   ],
 })
 
 // Navigation guard
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore()
 
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    next('/login')
-  } else if (to.name === 'login' && authStore.isAuthenticated) {
-    next('/')
-  } else {
-    next()
+  // Ensure auth is initialized from localStorage
+  if (!authStore.token && !authStore.user) {
+    const storedToken = localStorage.getItem('auth_token')
+    if (storedToken) {
+      // Auth store will auto-initialize on first use
+      authStore.token = storedToken
+    }
   }
+
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    return next('/login')
+  }
+
+  if (to.name === 'login' && authStore.isAuthenticated) {
+    return next('/')
+  }
+
+  next()
 })
 
 export default router

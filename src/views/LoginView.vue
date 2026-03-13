@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 
+const router = useRouter();
 const authStore = useAuthStore();
 
 const login = ref('');
@@ -32,7 +34,7 @@ const handleLogin = async () => {
     if (result.requiresConfirmation) {
       showConfirmLogin.value = true;
     } else if (result.success) {
-      // Router guard will redirect to home
+      router.push('/');
     }
   } catch {
     // Error handled in store
@@ -44,7 +46,7 @@ const handleConfirmLogin = async () => {
 
   try {
     await authStore.confirmLogin(confirmationToken.value);
-    // Router guard will redirect to home
+    router.push('/');
   } catch {
     // Error handled in store
   }
