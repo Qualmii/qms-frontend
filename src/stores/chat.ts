@@ -128,7 +128,18 @@ export const useChatStore = defineStore('chat', () => {
     try {
       const response = await apiClient.getOrCreatePrivateChat(userId);
       const chat = response.data;
-      if (!chats.value.find(c => c.id === chat.id)) chats.value.unshift(chat);
+
+      // Find existing chat
+      const existingIndex = chats.value.findIndex(c => c.id === chat.id);
+
+      if (existingIndex !== -1) {
+        // Update existing chat using splice to ensure reactivity
+        chats.value.splice(existingIndex, 1, chat);
+      } else {
+        // Add new chat to the beginning of the list
+        chats.value.unshift(chat);
+      }
+
       return chat;
     } catch (err: unknown) {
       error.value = getErrorMessage(err, 'Failed to create private chat');

@@ -92,9 +92,6 @@ export interface ChatUser {
   email: string;
   uin: string;
   username?: string;
-  status?: 'online' | 'offline';
-  online_status?: string;
-  last_seen_at?: string | null;
   pivot: {
     chat_id: number;
     user_id: string;
@@ -231,12 +228,12 @@ export interface Session {
 // Search Types
 export interface SearchUserRequest {
   query: string;
+  limit?: number;
 }
 
 export interface SearchUserResponse {
   id: string;
   name: string;
-  email?: string;
   uin: string;
   username?: string;
 }
