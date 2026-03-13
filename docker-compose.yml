@@ -1,0 +1,31 @@
+services:
+  qms-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_URL=http://localhost:8000/api/v1
+      - VITE_REVERB_APP_KEY=qms-reverb-key
+      - VITE_REVERB_HOST=localhost
+      - VITE_REVERB_WS_PORT=8080
+      - VITE_REVERB_WSS_PORT=443
+      - VITE_REVERB_SCHEME=http
+      - NODE_ENV=development
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npm run dev -- --host 0.0.0.0 --port 80
+    networks:
+      - qms-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  qms-network:
+    driver: bridge
+    external: true
