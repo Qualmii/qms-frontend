@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 
-const router = useRouter();
 const authStore = useAuthStore();
 
 const login = ref('');
@@ -36,7 +34,7 @@ const handleLogin = async () => {
     } else if (result.success) {
       // Router guard will redirect to home
     }
-  } catch (error) {
+  } catch {
     // Error handled in store
   }
 };
@@ -47,7 +45,7 @@ const handleConfirmLogin = async () => {
   try {
     await authStore.confirmLogin(confirmationToken.value);
     // Router guard will redirect to home
-  } catch (error) {
+  } catch {
     // Error handled in store
   }
 };
@@ -65,7 +63,7 @@ const handleRegister = async () => {
       registerPassword.value = '';
       confirmPassword.value = '';
     }
-  } catch (error) {
+  } catch {
     // Error handled in store
   }
 };
@@ -88,7 +86,7 @@ const backToLogin = () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+  <div class="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
     <div class="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
       <!-- Header -->
       <div class="text-center mb-8">
@@ -101,8 +99,42 @@ const backToLogin = () => {
         <p class="text-red-700 text-sm">{{ authStore.error }}</p>
       </div>
 
+      <!-- Confirmation Form -->
+      <div v-if="showConfirmLogin" class="space-y-6">
+        <p class="text-sm text-gray-700">
+          На ваш Email отправлено письмо для подтверждения. Пожалуйста, следуйте инструкциям в письме или введите токен из письма ниже:
+        </p>
+        <div>
+          <label for="confirmationToken" class="block text-sm font-medium text-gray-700 mb-2">
+            Код подтверждения
+          </label>
+          <input
+            id="confirmationToken"
+            v-model="confirmationToken"
+            type="text"
+            required
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+            placeholder="Введите код"
+          />
+        </div>
+
+        <button
+          @click="handleConfirmLogin"
+          class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors"
+        >
+          Подтвердить
+        </button>
+
+        <button
+          @click="backToLogin"
+          class="w-full text-blue-600 hover:text-blue-800 font-medium transition-colors"
+        >
+          Назад к входу
+        </button>
+      </div>
+
       <!-- Login Form -->
-      <form v-if="isLoginMode" @submit.prevent="handleLogin" class="space-y-6">
+      <form v-else-if="isLoginMode" @submit.prevent="handleLogin" class="space-y-6">
         <div>
           <label for="login" class="block text-sm font-medium text-gray-700 mb-2">
             Email или UIN
@@ -146,39 +178,6 @@ const backToLogin = () => {
         </button>
       </form>
 
-      <!-- Confirmation Form -->
-      <div v-if="showConfirmLogin" class="space-y-6">
-        <p class="text-sm text-gray-700">
-          На ваш Email отправлен код подтверждения. Пожалуйста, введите его ниже:
-        </p>
-        <div>
-          <label for="confirmationToken" class="block text-sm font-medium text-gray-700 mb-2">
-            Код подтверждения
-          </label>
-          <input
-            id="confirmationToken"
-            v-model="confirmationToken"
-            type="text"
-            required
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-            placeholder="Введите код"
-          />
-        </div>
-
-        <button
-          @click="handleConfirmLogin"
-          class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors"
-        >
-          Подтвердить
-        </button>
-
-        <button
-          @click="backToLogin"
-          class="w-full text-blue-600 hover:text-blue-800 font-medium transition-colors"
-        >
-          Назад к входу
-        </button>
-      </div>
 
       <!-- Register Form -->
       <form v-else @submit.prevent="handleRegister" class="space-y-6">
@@ -257,7 +256,7 @@ const backToLogin = () => {
       </form>
 
       <!-- Switch Mode -->
-      <div class="mt-6 text-center">
+      <div v-if="!showConfirmLogin" class="mt-6 text-center">
         <button
           v-if="isLoginMode"
           @click="switchToRegister"
