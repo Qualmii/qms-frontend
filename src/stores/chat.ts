@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia';
+import { defineStore, acceptHMRUpdate } from 'pinia';
 import { ref, computed } from 'vue';
 import type { Chat, Message, WsMessageSentPayload } from '@/types/api';
 import { apiClient } from '@/services/api';
@@ -154,6 +154,31 @@ export const useChatStore = defineStore('chat', () => {
     }
   };
 
+  const sendFileMessage = async (chatId: number, file: File) => {
+    const type: Message['type'] = file.type.startsWith('image/') ? 'image'
+      : file.type.startsWith('video/') ? 'video'
+      : file.type.startsWith('audio/') ? 'voice'
+      : 'file';
+
+    // 1. Создаём сообщение (контент = имя файла)
+    const sendResp = await apiClient.sendMessage({ chat_id: chatId, content: file.name, type });
+    const msgId = (sendResp.data as unknown as { id: number }).id;
+
+    // 2. Загружаем файл к сообщению
+    await apiClient.uploadFile(msgId, file);
+
+    // 3. Забираем полное сообщение с вложением
+    const fullMessage = (await apiClient.getMessage(msgId)).data;
+
+    if (!messages.value[chatId]) messages.value[chatId] = [];
+    messages.value[chatId]!.push(fullMessage);
+
+    const chat = chats.value.find(c => c.id === chatId);
+    if (chat) chat.last_message = fullMessage;
+
+    return fullMessage;
+  };
+
   const getOrCreateFavoritesChat = async () => {
     try {
       const response = await apiClient.getOrCreateFavoritesChat();
@@ -275,6 +300,7 @@ export const useChatStore = defineStore('chat', () => {
     selectChat,
     fetchMessages,
     sendMessage,
+    sendFileMessage,
     getOrCreatePrivateChat,
     getOrCreateFavoritesChat,
     addUserToChat,
@@ -288,3 +314,9 @@ export const useChatStore = defineStore('chat', () => {
     handleWsMessageSent,
   };
 });
+
+// Поддержка Vite HMR — стор обновляется без перезагрузки страницы
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useChatStore, import.meta.hot));
+}
+

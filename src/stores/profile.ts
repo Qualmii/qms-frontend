@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia';
+import { defineStore, acceptHMRUpdate } from 'pinia';
 import { ref, computed } from 'vue';
 import type { User, LanguagesResponse } from '@/types/api';
 import { apiClient } from '@/services/api';
@@ -148,3 +148,6 @@ export const useProfileStore = defineStore('profile', () => {
   };
 });
 
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useProfileStore, import.meta.hot));
+}

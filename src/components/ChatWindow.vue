@@ -18,6 +18,54 @@ const sendError = ref<string | null>(null)
 const messagesContainer = ref<HTMLElement | null>(null)
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
+// --- Pending file attachments ---
+interface PendingFile {
+  file: File
+  previewUrl: string | null  // blob URL для изображений
+  name: string
+  sizeLabel: string
+}
+
+const pendingFiles = ref<PendingFile[]>([])
+
+const formatFileSize = (bytes: number): string => {
+  if (bytes < 1024) return `${bytes} Б`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} КБ`
+  return `${(bytes / 1024 / 1024).toFixed(1)} МБ`
+}
+
+const getAttachmentUrl = (filePath: string): string => {
+  const apiUrl = (import.meta.env.VITE_API_URL as string) || 'http://localhost:8000/api/v1'
+  const baseUrl = apiUrl.replace(/\/api\/v1\/?$/, '')
+  return `${baseUrl}/storage/${filePath}`
+}
+
+const handleFileSelect = (e: Event) => {
+  const input = e.target as HTMLInputElement
+  if (!input.files?.length) return
+  Array.from(input.files).forEach(file => {
+    pendingFiles.value.push({
+      file,
+      previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
+      name: file.name,
+      sizeLabel: formatFileSize(file.size),
+    })
+  })
+  input.value = '' // сброс — позволяет выбрать тот же файл снова
+}
+
+const removeFile = (index: number) => {
+  const pf = pendingFiles.value[index]
+  if (pf?.previewUrl) URL.revokeObjectURL(pf.previewUrl)
+  pendingFiles.value.splice(index, 1)
+}
+
+const clearPendingFiles = () => {
+  pendingFiles.value.forEach(pf => { if (pf.previewUrl) URL.revokeObjectURL(pf.previewUrl) })
+  pendingFiles.value = []
+}
+// --- /Pending file attachments ---
+
 // --- Emoji picker ---
 const showEmojiPicker = ref(false)
 const emojiPickerWrapRef = ref<HTMLElement | null>(null)
@@ -92,14 +140,11 @@ const onClickOutsidePicker = (e: MouseEvent) => {
 
 watch(showEmojiPicker, (val) => {
   if (val) {
-    // setTimeout чтобы не поймать тот же клик по кнопке
     setTimeout(() => document.addEventListener('mousedown', onClickOutsidePicker), 0)
   } else {
     document.removeEventListener('mousedown', onClickOutsidePicker)
   }
 })
-
-onUnmounted(() => document.removeEventListener('mousedown', onClickOutsidePicker))
 // --- /Emoji picker ---
 
 const messages = computed(() => chatStore.getMessagesForChat(props.chat.id))
@@ -144,26 +189,46 @@ const formatTime = (dateStr: string) => {
 }
 
 const isOwn = (msg: Message) => msg.sender_id === authStore.user?.id
-
 const getSenderName = (msg: Message) => msg.sender?.name || '?'
+const getSenderAvatar = (msg: Message) => (msg.sender?.name || '?').substring(0, 2).toUpperCase()
 
-const getSenderAvatar = (msg: Message) =>
-  (msg.sender?.name || '?').substring(0, 2).toUpperCase()
+// --- Лайтбокс для изображений ---
+const lightboxUrl = ref<string | null>(null)
+const openImage = (url: string) => { lightboxUrl.value = url }
+const closeLightbox = () => { lightboxUrl.value = null }
+
+// Закрытие по Escape
+const onKeydownLightbox = (e: KeyboardEvent) => {
+  if (e.key === 'Escape') closeLightbox()
+}
+watch(lightboxUrl, (val) => {
+  if (val) document.addEventListener('keydown', onKeydownLightbox)
+  else document.removeEventListener('keydown', onKeydownLightbox)
+})
+// --- /Лайтбокс ---
 
 const handleSend = async () => {
   const text = messageText.value.trim()
-  if (!text || isSending.value) return
+  const hasFiles = pendingFiles.value.length > 0
+  if ((!text && !hasFiles) || isSending.value) return
 
   sendError.value = null
   isSending.value = true
-  messageText.value = ''
+
+  const savedText = text
+  if (text) messageText.value = ''
+  const filesToSend = pendingFiles.value.length > 0 ? [...pendingFiles.value] : []
+  if (filesToSend.length) clearPendingFiles()
 
   try {
-    await chatStore.sendMessage(props.chat.id, text)
+    if (savedText) await chatStore.sendMessage(props.chat.id, savedText)
+    for (const pf of filesToSend) {
+      await chatStore.sendFileMessage(props.chat.id, pf.file)
+    }
   } catch (err) {
     sendError.value = 'Не удалось отправить сообщение'
-    messageText.value = text // возвращаем текст обратно при ошибке
-    console.error('Send message failed:', err)
+    if (savedText && !messageText.value) messageText.value = savedText
+    console.error('Send failed:', err)
   } finally {
     isSending.value = false
   }
@@ -172,12 +237,18 @@ const handleSend = async () => {
 const handleKeydown = (e: KeyboardEvent) => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault()
-    if (messageText.value.trim()) handleSend()
+    if (messageText.value.trim() || pendingFiles.value.length > 0) handleSend()
   }
 }
 
 const handleAttach = () => fileInputRef.value?.click()
 const handleVoice = () => { /* следующий этап */ }
+
+onUnmounted(() => {
+  document.removeEventListener('mousedown', onClickOutsidePicker)
+  document.removeEventListener('keydown', onKeydownLightbox)
+  pendingFiles.value.forEach(pf => { if (pf.previewUrl) URL.revokeObjectURL(pf.previewUrl) })
+})
 </script>
 
 <template>
@@ -227,14 +298,44 @@ const handleVoice = () => { /* следующий этап */ }
         <!-- Own message (right) -->
         <div v-if="isOwn(msg)" class="flex justify-end items-end gap-1">
           <div class="flex flex-col items-end">
-            <div
-              class="bg-blue-500 text-white rounded-2xl rounded-br-sm px-4 py-2 max-w-xs md:max-w-md lg:max-w-lg shadow-sm"
-            >
-              <p class="text-sm whitespace-pre-wrap break-words leading-relaxed">{{ msg.content }}</p>
+            <div class="bg-blue-500 text-white rounded-2xl rounded-br-sm px-4 py-2 max-w-xs md:max-w-md lg:max-w-lg shadow-sm">
+              <!-- Image attachment -->
+              <template v-if="msg.type === 'image' && msg.attachments?.length">
+                <img
+                  :src="getAttachmentUrl(msg.attachments[0]!.file_path)"
+                  :alt="msg.attachments[0]!.name"
+                  class="rounded-xl max-w-full max-h-60 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                  @click="openImage(getAttachmentUrl(msg.attachments[0]!.file_path))"
+                />
+              </template>
+              <!-- File attachment -->
+              <template v-else-if="msg.attachments?.length">
+                <a
+                  :href="getAttachmentUrl(msg.attachments[0]!.file_path)"
+                  :download="msg.attachments[0]!.name"
+                  target="_blank"
+                  class="flex items-center gap-3 py-1 text-white hover:opacity-80 transition-opacity"
+                >
+                  <div class="w-9 h-9 rounded-lg bg-blue-400/50 flex items-center justify-center shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                    </svg>
+                  </div>
+                  <div class="min-w-0">
+                    <p class="text-sm font-medium truncate max-w-[180px]">{{ msg.attachments[0]!.name }}</p>
+                    <p class="text-xs opacity-75">{{ formatFileSize(msg.attachments[0]!.size) }}</p>
+                  </div>
+                  <svg class="w-4 h-4 shrink-0 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                  </svg>
+                </a>
+              </template>
+              <!-- Text content -->
+              <p v-if="msg.content && msg.type === 'text'" class="text-sm whitespace-pre-wrap break-words leading-relaxed">{{ msg.content }}</p>
             </div>
             <div class="flex items-center gap-1 mt-1 px-1">
               <span class="text-xs text-gray-400">{{ formatTime(msg.created_at) }}</span>
-              <!-- single tick / double tick -->
               <svg v-if="msg.read_at" class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
               </svg>
@@ -247,18 +348,48 @@ const handleVoice = () => { /* следующий этап */ }
 
         <!-- Incoming message (left) -->
         <div v-else class="flex items-end gap-2">
-          <div
-            class="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0 shadow-sm"
-          >
+          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-xs font-semibold shrink-0 shadow-sm">
             {{ getSenderAvatar(msg) }}
           </div>
           <div class="flex flex-col items-start max-w-xs md:max-w-md lg:max-w-lg">
-            <!-- Sender name — only in group -->
             <span v-if="chat.type === 'group'" class="text-xs font-medium text-blue-500 mb-1 ml-1">
               {{ getSenderName(msg) }}
             </span>
             <div class="bg-white text-gray-900 rounded-2xl rounded-bl-sm px-4 py-2 shadow-sm border border-gray-100">
-              <p class="text-sm whitespace-pre-wrap break-words leading-relaxed">{{ msg.content }}</p>
+              <!-- Image attachment -->
+              <template v-if="msg.type === 'image' && msg.attachments?.length">
+                <img
+                  :src="getAttachmentUrl(msg.attachments[0]!.file_path)"
+                  :alt="msg.attachments[0]!.name"
+                  class="rounded-xl max-w-full max-h-60 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                  @click="openImage(getAttachmentUrl(msg.attachments[0]!.file_path))"
+                />
+              </template>
+              <!-- File attachment -->
+              <template v-else-if="msg.attachments?.length">
+                <a
+                  :href="getAttachmentUrl(msg.attachments[0]!.file_path)"
+                  :download="msg.attachments[0]!.name"
+                  target="_blank"
+                  class="flex items-center gap-3 py-1 text-gray-700 hover:text-gray-900 transition-colors"
+                >
+                  <div class="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                    <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                    </svg>
+                  </div>
+                  <div class="min-w-0">
+                    <p class="text-sm font-medium truncate max-w-[180px]">{{ msg.attachments[0]!.name }}</p>
+                    <p class="text-xs text-gray-400">{{ formatFileSize(msg.attachments[0]!.size) }}</p>
+                  </div>
+                  <svg class="w-4 h-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                  </svg>
+                </a>
+              </template>
+              <!-- Text content -->
+              <p v-if="msg.content && msg.type === 'text'" class="text-sm whitespace-pre-wrap break-words leading-relaxed">{{ msg.content }}</p>
             </div>
             <span class="text-xs text-gray-400 mt-1 ml-1">{{ formatTime(msg.created_at) }}</span>
           </div>
@@ -277,6 +408,40 @@ const handleVoice = () => { /* следующий этап */ }
             d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         {{ sendError }}
+      </div>
+
+      <!-- Превью выбранных файлов -->
+      <div v-if="pendingFiles.length > 0" class="flex flex-wrap gap-2 mb-3">
+        <div
+          v-for="(pf, index) in pendingFiles"
+          :key="index"
+          class="relative group"
+        >
+          <!-- Изображение -->
+          <div v-if="pf.previewUrl" class="w-20 h-20 rounded-xl overflow-hidden border border-gray-200 shadow-sm">
+            <img :src="pf.previewUrl" :alt="pf.name" class="w-full h-full object-cover" />
+          </div>
+          <!-- Другой файл -->
+          <div v-else class="w-20 h-20 rounded-xl bg-gray-100 border border-gray-200 flex flex-col items-center justify-center gap-1 px-2 shadow-sm">
+            <svg class="w-7 h-7 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+            </svg>
+            <span class="text-xs text-gray-500 truncate w-full text-center leading-tight">{{ pf.name }}</span>
+            <span class="text-xs text-gray-400">{{ pf.sizeLabel }}</span>
+          </div>
+          <!-- Кнопка удаления -->
+          <button
+            @click="removeFile(index)"
+            class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gray-700 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow"
+            type="button"
+            title="Удалить"
+          >
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
       </div>
 
       <div class="flex items-end gap-2">
@@ -354,7 +519,7 @@ const handleVoice = () => { /* следующий этап */ }
         <!-- Right: voice + send -->
         <div class="flex gap-0.5 pb-1.5">
           <button
-            v-if="!messageText.trim() && !isSending"
+            v-if="!messageText.trim() && pendingFiles.length === 0 && !isSending"
             @click="handleVoice"
             class="p-2.5 text-gray-400 hover:text-red-500 hover:bg-gray-100 rounded-full transition-colors"
             title="Голосовое сообщение"
@@ -367,9 +532,9 @@ const handleVoice = () => { /* следующий этап */ }
           </button>
 
           <button
-            v-if="messageText.trim() || isSending"
+            v-if="messageText.trim() || pendingFiles.length > 0 || isSending"
             @click="handleSend"
-            :disabled="isSending || !messageText.trim()"
+            :disabled="isSending || (!messageText.trim() && pendingFiles.length === 0)"
             class="p-2.5 bg-blue-500 text-white rounded-full hover:bg-blue-600 active:scale-95 transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
             title="Отправить"
             type="button"
@@ -389,7 +554,46 @@ const handleVoice = () => { /* следующий этап */ }
     </div>
 
     <!-- Hidden file input -->
-    <input ref="fileInputRef" type="file" multiple class="hidden" />
+    <input ref="fileInputRef" type="file" multiple class="hidden" @change="handleFileSelect" />
+
+    <!-- Lightbox -->
+    <Teleport to="body">
+      <div
+        v-if="lightboxUrl"
+        class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+        @click.self="closeLightbox"
+      >
+        <!-- Close button -->
+        <button
+          @click="closeLightbox"
+          class="absolute top-4 right-4 w-10 h-10 flex items-center justify-center text-white bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+          title="Закрыть (Esc)"
+        >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+        <!-- Image -->
+        <img
+          :src="lightboxUrl"
+          class="max-w-[90vw] max-h-[90vh] object-contain rounded-xl shadow-2xl"
+          @click.stop
+        />
+        <!-- Open in new tab -->
+        <a
+          :href="lightboxUrl"
+          target="_blank"
+          rel="noopener"
+          class="absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2 text-sm text-white bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+          </svg>
+          Открыть оригинал
+        </a>
+      </div>
+    </Teleport>
   </div>
 </template>
 

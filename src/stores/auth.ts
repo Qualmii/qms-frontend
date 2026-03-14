@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia';
+import { defineStore, acceptHMRUpdate } from 'pinia';
 import { ref, computed } from 'vue';
 import type { User } from '@/types/api';
 import { apiClient } from '@/services/api';
@@ -146,3 +146,9 @@ export const useAuthStore = defineStore('auth', () => {
     clearAuthData,
   };
 });
+
+// Поддержка Vite HMR
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useAuthStore, import.meta.hot));
+}
+

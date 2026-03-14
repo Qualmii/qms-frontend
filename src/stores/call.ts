@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia';
+import { defineStore, acceptHMRUpdate } from 'pinia';
 import { ref, computed } from 'vue';
 import type { Call, WsCallUpdatedPayload, CallResponse } from '@/types/api';
 import { apiClient } from '@/services/api';
@@ -244,3 +244,6 @@ export const useCallStore = defineStore('call', () => {
   };
 });
 
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useCallStore, import.meta.hot));
+}
