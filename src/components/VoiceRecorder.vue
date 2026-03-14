@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onUnmounted } from 'vue'
+import fixWebmDuration from 'fix-webm-duration'
 
 const emit = defineEmits<{
   send: [file: File]
@@ -8,16 +9,24 @@ const emit = defineEmits<{
 
 // ─── State ────────────────────────────────────────────────────────────────────
 type RecState = 'recording' | 'paused' | 'stopped'
-const state = ref<RecState>('recording')
-const duration = ref(0)
+const state     = ref<RecState>('recording')
+const duration  = ref(0)
 const previewUrl = ref<string | null>(null)
-const errorMsg = ref<string | null>(null)
+const errorMsg  = ref<string | null>(null)
 
 let mediaRecorder: MediaRecorder | null = null
 let audioChunks: Blob[] = []
 let stream: MediaStream | null = null
 let timerInterval: ReturnType<typeof setInterval> | null = null
 let mimeType = 'audio/webm'
+
+// Точный трекинг длительности в миллисекундах (для fixWebmDuration)
+let recordStartTimestamp: number | null = null
+let accumulatedMs = 0
+let fixedBlob: Blob | null = null
+
+const getTotalDurationMs = () =>
+  accumulatedMs + (recordStartTimestamp != null ? Date.now() - recordStartTimestamp : 0)
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const formattedDuration = computed(() => {
@@ -35,23 +44,33 @@ const stopTimer = () => {
 const revokePreview = () => {
   if (previewUrl.value) { URL.revokeObjectURL(previewUrl.value); previewUrl.value = null }
 }
-const buildPreview = () => {
+
+/** Строим превью-блоб, при необходимости исправляя duration-метаданные WebM */
+const buildPreview = async (durationMs?: number) => {
   revokePreview()
-  const blob = new Blob(audioChunks, { type: mimeType })
-  if (blob.size > 0) previewUrl.value = URL.createObjectURL(blob)
+  let blob = new Blob(audioChunks, { type: mimeType })
+  if (blob.size === 0) return
+  if (durationMs !== undefined && mimeType.includes('webm')) {
+    blob = await fixWebmDuration(blob, durationMs, { logger: false })
+  }
+  fixedBlob = blob
+  previewUrl.value = URL.createObjectURL(blob)
 }
+
 const stopStream = () => stream?.getTracks().forEach(t => t.stop())
 
 // ─── Core recording ops ───────────────────────────────────────────────────────
 const stopRecorderAsync = (): Promise<void> => {
+  // Фиксируем длительность прямо сейчас, до остановки рекордера
+  const durationMs = getTotalDurationMs()
+  recordStartTimestamp = null
+
   if (!mediaRecorder || mediaRecorder.state === 'inactive') {
-    buildPreview()
-    state.value = 'stopped'
-    return Promise.resolve()
+    return buildPreview(durationMs).then(() => { state.value = 'stopped' })
   }
   return new Promise((resolve) => {
-    mediaRecorder!.addEventListener('stop', () => {
-      buildPreview()
+    mediaRecorder!.addEventListener('stop', async () => {
+      await buildPreview(durationMs)
       state.value = 'stopped'
       stopStream()
       resolve()
@@ -68,14 +87,21 @@ const pause = () => {
   mediaRecorder.pause()
   state.value = 'paused'
   stopTimer()
-  buildPreview()
+  // Накапливаем прошедшие мс перед паузой
+  if (recordStartTimestamp != null) {
+    accumulatedMs += Date.now() - recordStartTimestamp
+    recordStartTimestamp = null
+  }
+  buildPreview(accumulatedMs) // fire-and-forget: обновляем превью с правильной длиной
 }
 
 const resume = () => {
   if (mediaRecorder?.state !== 'paused') return
   revokePreview()
+  fixedBlob = null
   mediaRecorder.resume()
   state.value = 'recording'
+  recordStartTimestamp = Date.now() // возобновляем отсчёт
   startTimer()
 }
 
@@ -86,6 +112,9 @@ const stop = async () => {
 
 const cancel = () => {
   stopTimer()
+  recordStartTimestamp = null
+  accumulatedMs = 0
+  fixedBlob = null
   if (mediaRecorder && mediaRecorder.state !== 'inactive') {
     mediaRecorder.onstop = null
     try { mediaRecorder.stop() } catch { /* ignore */ }
@@ -102,13 +131,15 @@ const send = async () => {
     await stopRecorderAsync()
   }
 
-  const blob = new Blob(audioChunks, { type: mimeType })
+  // Используем уже исправленный блоб (fixWebmDuration применён в buildPreview)
+  const blob = fixedBlob ?? new Blob(audioChunks, { type: mimeType })
   if (blob.size === 0) { cancel(); return }
 
   const ext = mimeType.includes('ogg') ? 'ogg' : mimeType.includes('mp4') ? 'm4a' : 'webm'
   const file = new File([blob], `voice_${Date.now()}.${ext}`, { type: mimeType })
 
   revokePreview()
+  fixedBlob = null
   audioChunks = []
   emit('send', file)
 }
@@ -125,10 +156,13 @@ const init = async () => {
     duration.value = 0
     state.value = 'recording'
     errorMsg.value = null
+    accumulatedMs = 0
+    fixedBlob = null
 
     mediaRecorder = new MediaRecorder(stream, { mimeType })
     mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data) }
     mediaRecorder.start(100)
+    recordStartTimestamp = Date.now() // начинаем точный отсчёт
     startTimer()
   } catch {
     errorMsg.value = 'Нет доступа к микрофону. Разрешите доступ и попробуйте снова.'

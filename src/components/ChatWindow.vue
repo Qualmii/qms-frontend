@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useChatStore } from '@/stores/chat'
 import type { Chat, Message } from '@/types/api'
 import VoiceRecorder from '@/components/VoiceRecorder.vue'
+import VoicePlayer from '@/components/VoicePlayer.vue'
 
 const props = defineProps<{ chat: Chat }>()
 
@@ -333,11 +334,14 @@ onUnmounted(() => {
               </template>
               <!-- Voice attachment -->
               <template v-else-if="msg.type === 'voice' && msg.attachments?.length">
-                <div class="flex items-center gap-2 py-1 min-w-[200px]">
+                <div class="flex items-center gap-2 py-1">
                   <svg class="w-4 h-4 opacity-75 shrink-0" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zm-1 3a1 1 0 012 0v8a1 1 0 01-2 0V4zM7 11a5 5 0 0010 0 1 1 0 012 0 7 7 0 01-6 6.93V21a1 1 0 01-2 0v-3.07A7 7 0 015 12a1 1 0 012 0z"/>
                   </svg>
-                  <audio :src="getAttachmentUrl(msg.attachments[0]!.file_path)" controls style="height:32px; min-width:160px;" />
+                  <VoicePlayer
+                    :src="getAttachmentUrl(msg.attachments[0]!.file_path)"
+                    variant="dark"
+                  />
                 </div>
               </template>
               <!-- File attachment -->
@@ -399,11 +403,14 @@ onUnmounted(() => {
               </template>
               <!-- Voice attachment -->
               <template v-else-if="msg.type === 'voice' && msg.attachments?.length">
-                <div class="flex items-center gap-2 py-1 min-w-[200px]">
+                <div class="flex items-center gap-2 py-1">
                   <svg class="w-4 h-4 text-blue-400 shrink-0" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zm-1 3a1 1 0 012 0v8a1 1 0 01-2 0V4zM7 11a5 5 0 0010 0 1 1 0 012 0 7 7 0 01-6 6.93V21a1 1 0 01-2 0v-3.07A7 7 0 015 12a1 1 0 012 0z"/>
                   </svg>
-                  <audio :src="getAttachmentUrl(msg.attachments[0]!.file_path)" controls style="height:32px; min-width:160px;" />
+                  <VoicePlayer
+                    :src="getAttachmentUrl(msg.attachments[0]!.file_path)"
+                    variant="light"
+                  />
                 </div>
               </template>
               <!-- File attachment -->

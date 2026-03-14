@@ -20,6 +20,7 @@
     "@tailwindcss/postcss": "^4.0.0-alpha.35",
     "axios": "^1.13.6",
     "emoji-mart-vue-fast": "^15.0.5",
+    "fix-webm-duration": "^1.0.6",
     "js-cookie": "^3.0.5",
     "laravel-echo": "^1.19.0",
     "lucide-vue-next": "^0.577.0",
