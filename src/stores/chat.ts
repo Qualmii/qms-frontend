@@ -86,15 +86,22 @@ export const useChatStore = defineStore('chat', () => {
   const fetchMessages = async (chatId: number, page = 1) => {
     try {
       const response = await apiClient.getMessages({ chat_id: chatId, page, limit: 50 });
-      const newMessages = response.data.data;
+      // Backend returns a plain array sorted asc by created_at
+      const newMessages = response.data;
+
+      if (!Array.isArray(newMessages)) {
+        console.warn('fetchMessages: unexpected response shape', newMessages);
+        messages.value[chatId] = [];
+        return;
+      }
 
       if (page === 1) {
-        messages.value[chatId] = newMessages.reverse(); // Reverse to show oldest first
+        messages.value[chatId] = newMessages;
       } else {
         if (!messages.value[chatId]) {
           messages.value[chatId] = [];
         }
-        messages.value[chatId]!.unshift(...newMessages.reverse());
+        messages.value[chatId]!.unshift(...newMessages);
       }
     } catch (err: unknown) {
       error.value = getErrorMessage(err, 'Failed to fetch messages');

@@ -19,10 +19,8 @@ import type {
   SearchUserResponse,
   Session,
   LanguagesResponse,
-  PaginatedResponse,
   ApiError,
   SetUsernameResponse,
-  SetStatusResponse,
   UpdateLocaleResponse,
   AvailableStatuses,
   UserPublicStatusResponse
@@ -214,7 +212,7 @@ class ApiClient {
     return this.client.get(`/messages/${messageId}`);
   }
 
-  async getMessages(params?: { chat_id?: number; page?: number; limit?: number }): Promise<AxiosResponse<PaginatedResponse<Message>>> {
+  async getMessages(params?: { chat_id?: number; page?: number; limit?: number }): Promise<AxiosResponse<Message[]>> {
     return this.client.get('/messages', { params });
   }
 

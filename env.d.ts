@@ -32,3 +32,44 @@ declare module 'simple-peer' {
 }
 
 declare module '@heroicons/vue/24/outline';
+
+declare module 'emoji-mart-vue-fast' {
+  import type { DefineComponent } from 'vue'
+
+  export interface EmojiObject {
+    id: string
+    name: string
+    native: string
+    unified: string
+    colons: string
+    skin?: number | null
+  }
+
+  export const Picker: DefineComponent<{
+    data: InstanceType<typeof EmojiIndex>
+    set?: string
+    title?: string
+    emoji?: string
+    color?: string
+    showPreview?: boolean
+    showSkinTones?: boolean
+    i18n?: object
+  }>
+
+  export class EmojiIndex {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    constructor(data: any)
+    search(query: string): EmojiObject[]
+    findEmoji(id: string): EmojiObject | null
+  }
+}
+
+declare module 'emoji-mart-vue-fast/src' {
+  export * from 'emoji-mart-vue-fast'
+}
+
+declare module 'emoji-mart-vue-fast/data/all.json' {
+  const value: object
+  export default value
+}
+
