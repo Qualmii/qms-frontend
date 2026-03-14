@@ -6,6 +6,7 @@ import 'emoji-mart-vue-fast/css/emoji-mart.css'
 import { useAuthStore } from '@/stores/auth'
 import { useChatStore } from '@/stores/chat'
 import type { Chat, Message } from '@/types/api'
+import VoiceRecorder from '@/components/VoiceRecorder.vue'
 
 const props = defineProps<{ chat: Chat }>()
 
@@ -242,7 +243,29 @@ const handleKeydown = (e: KeyboardEvent) => {
 }
 
 const handleAttach = () => fileInputRef.value?.click()
-const handleVoice = () => { /* следующий этап */ }
+const handleVoice = () => { showVoiceRecorder.value = true }
+
+// ─── Voice recorder ───────────────────────────────────────────────────────────
+const showVoiceRecorder = ref(false)
+
+const handleVoiceSend = async (file: File) => {
+  showVoiceRecorder.value = false
+  isSending.value = true
+  sendError.value = null
+  try {
+    await chatStore.sendFileMessage(props.chat.id, file)
+  } catch (err) {
+    sendError.value = 'Не удалось отправить голосовое сообщение'
+    console.error('Voice send failed:', err)
+  } finally {
+    isSending.value = false
+  }
+}
+
+const handleVoiceCancel = () => {
+  showVoiceRecorder.value = false
+}
+// ─── /Voice recorder ──────────────────────────────────────────────────────────
 
 onUnmounted(() => {
   document.removeEventListener('mousedown', onClickOutsidePicker)
@@ -308,6 +331,15 @@ onUnmounted(() => {
                   @click="openImage(getAttachmentUrl(msg.attachments[0]!.file_path))"
                 />
               </template>
+              <!-- Voice attachment -->
+              <template v-else-if="msg.type === 'voice' && msg.attachments?.length">
+                <div class="flex items-center gap-2 py-1 min-w-[200px]">
+                  <svg class="w-4 h-4 opacity-75 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zm-1 3a1 1 0 012 0v8a1 1 0 01-2 0V4zM7 11a5 5 0 0010 0 1 1 0 012 0 7 7 0 01-6 6.93V21a1 1 0 01-2 0v-3.07A7 7 0 015 12a1 1 0 012 0z"/>
+                  </svg>
+                  <audio :src="getAttachmentUrl(msg.attachments[0]!.file_path)" controls style="height:32px; min-width:160px;" />
+                </div>
+              </template>
               <!-- File attachment -->
               <template v-else-if="msg.attachments?.length">
                 <a
@@ -365,6 +397,15 @@ onUnmounted(() => {
                   @click="openImage(getAttachmentUrl(msg.attachments[0]!.file_path))"
                 />
               </template>
+              <!-- Voice attachment -->
+              <template v-else-if="msg.type === 'voice' && msg.attachments?.length">
+                <div class="flex items-center gap-2 py-1 min-w-[200px]">
+                  <svg class="w-4 h-4 text-blue-400 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zm-1 3a1 1 0 012 0v8a1 1 0 01-2 0V4zM7 11a5 5 0 0010 0 1 1 0 012 0 7 7 0 01-6 6.93V21a1 1 0 01-2 0v-3.07A7 7 0 015 12a1 1 0 012 0z"/>
+                  </svg>
+                  <audio :src="getAttachmentUrl(msg.attachments[0]!.file_path)" controls style="height:32px; min-width:160px;" />
+                </div>
+              </template>
               <!-- File attachment -->
               <template v-else-if="msg.attachments?.length">
                 <a
@@ -410,151 +451,151 @@ onUnmounted(() => {
         {{ sendError }}
       </div>
 
-      <!-- Превью выбранных файлов -->
-      <div v-if="pendingFiles.length > 0" class="flex flex-wrap gap-2 mb-3">
-        <div
-          v-for="(pf, index) in pendingFiles"
-          :key="index"
-          class="relative group"
-        >
-          <!-- Изображение -->
-          <div v-if="pf.previewUrl" class="w-20 h-20 rounded-xl overflow-hidden border border-gray-200 shadow-sm">
-            <img :src="pf.previewUrl" :alt="pf.name" class="w-full h-full object-cover" />
-          </div>
-          <!-- Другой файл -->
-          <div v-else class="w-20 h-20 rounded-xl bg-gray-100 border border-gray-200 flex flex-col items-center justify-center gap-1 px-2 shadow-sm">
-            <svg class="w-7 h-7 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-            </svg>
-            <span class="text-xs text-gray-500 truncate w-full text-center leading-tight">{{ pf.name }}</span>
-            <span class="text-xs text-gray-400">{{ pf.sizeLabel }}</span>
-          </div>
-          <!-- Кнопка удаления -->
-          <button
-            @click="removeFile(index)"
-            class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gray-700 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow"
-            type="button"
-            title="Удалить"
-          >
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-      </div>
+      <!-- Режим записи голосового -->
+      <VoiceRecorder
+        v-if="showVoiceRecorder"
+        @send="handleVoiceSend"
+        @cancel="handleVoiceCancel"
+      />
 
-      <div class="flex items-end gap-2">
+      <!-- Обычный режим ввода -->
+      <template v-else>
 
-        <!-- Left: emoji + attach -->
-        <div class="flex gap-0.5 pb-1.5">
-
-          <!-- Emoji button + picker -->
-          <div ref="emojiPickerWrapRef" class="relative">
+        <!-- Превью выбранных файлов -->
+        <div v-if="pendingFiles.length > 0" class="flex flex-wrap gap-2 mb-3">
+          <div v-for="(pf, index) in pendingFiles" :key="index" class="relative group">
+            <div v-if="pf.previewUrl" class="w-20 h-20 rounded-xl overflow-hidden border border-gray-200 shadow-sm">
+              <img :src="pf.previewUrl" :alt="pf.name" class="w-full h-full object-cover" />
+            </div>
+            <div v-else class="w-20 h-20 rounded-xl bg-gray-100 border border-gray-200 flex flex-col items-center justify-center gap-1 px-2 shadow-sm">
+              <svg class="w-7 h-7 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+              </svg>
+              <span class="text-xs text-gray-500 truncate w-full text-center leading-tight">{{ pf.name }}</span>
+              <span class="text-xs text-gray-400">{{ pf.sizeLabel }}</span>
+            </div>
             <button
-              @click="toggleEmojiPicker"
-              class="p-2 rounded-full transition-colors"
-              :class="showEmojiPicker
-                ? 'text-yellow-500 bg-yellow-50'
-                : 'text-gray-400 hover:text-yellow-500 hover:bg-gray-100'"
-              title="Эмодзи"
-              type="button"
+              @click="removeFile(index)"
+              class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gray-700 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow"
+              type="button" title="Удалить"
+            >
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Строка ввода -->
+        <div class="flex items-end gap-2">
+
+          <!-- Left: emoji + attach -->
+          <div class="flex gap-0.5 pb-1.5">
+
+            <!-- Emoji button + picker -->
+            <div ref="emojiPickerWrapRef" class="relative" @dblclick.stop>
+              <button
+                @click="toggleEmojiPicker"
+                class="p-2 rounded-full transition-colors"
+                :class="showEmojiPicker
+                  ? 'text-yellow-500 bg-yellow-50'
+                  : 'text-gray-400 hover:text-yellow-500 hover:bg-gray-100'"
+                title="Эмодзи" type="button"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+              <div
+                v-if="showEmojiPicker"
+                class="absolute bottom-full left-0 mb-2 z-50 shadow-xl rounded-xl overflow-hidden"
+              >
+                <Picker
+                  :data="emojiIndex"
+                  :native="true"
+                  :emoji-size="24"
+                  :show-preview="false"
+                  :show-skin-tones="false"
+                  title="Эмодзи"
+                  emoji="point_up"
+                  color="#3b82f6"
+                  :i18n="emojiI18n"
+                  @select="handleEmojiSelect"
+                />
+              </div>
+            </div>
+
+            <!-- Attach button -->
+            <button
+              @click="handleAttach"
+              class="p-2 text-gray-400 hover:text-blue-500 hover:bg-gray-100 rounded-full transition-colors"
+              title="Прикрепить файл" type="button"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Text input -->
+          <div class="flex-1">
+            <textarea
+              ref="textareaRef"
+              v-model="messageText"
+              @keydown="handleKeydown"
+              @click="saveCaretPos"
+              @keyup="saveCaretPos"
+              placeholder="Написать сообщение..."
+              rows="1"
+              :disabled="isSending"
+              class="w-full resize-none rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-shadow max-h-36 overflow-y-auto disabled:opacity-60"
+              style="line-height: 1.5;"
+            />
+          </div>
+
+          <!-- Right: voice + send -->
+          <div class="flex gap-0.5 pb-1.5">
+            <button
+              v-if="!messageText.trim() && pendingFiles.length === 0 && !isSending"
+              @click="handleVoice"
+              class="p-2.5 text-gray-400 hover:text-red-500 hover:bg-gray-100 rounded-full transition-colors"
+              title="Голосовое сообщение" type="button"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
               </svg>
             </button>
 
-            <!-- Emoji Picker -->
-            <div
-              v-if="showEmojiPicker"
-              class="absolute bottom-full left-0 mb-2 z-50 shadow-xl rounded-xl overflow-hidden"
+            <button
+              v-if="messageText.trim() || pendingFiles.length > 0 || isSending"
+              @click="handleSend"
+              :disabled="isSending || (!messageText.trim() && pendingFiles.length === 0)"
+              class="p-2.5 bg-blue-500 text-white rounded-full hover:bg-blue-600 active:scale-95 transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
+              title="Отправить" type="button"
             >
-              <Picker
-                :data="emojiIndex"
-                :native="true"
-                :emoji-size="24"
-                :show-preview="false"
-                :show-skin-tones="false"
-                title="Эмодзи"
-                emoji="point_up"
-                color="#3b82f6"
-                :i18n="emojiI18n"
-                @select="handleEmojiSelect"
-              />
-            </div>
+              <svg v-if="isSending" class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+            </button>
           </div>
 
-          <!-- Attach button -->
-          <button
-            @click="handleAttach"
-            class="p-2 text-gray-400 hover:text-blue-500 hover:bg-gray-100 rounded-full transition-colors"
-            title="Прикрепить файл"
-            type="button"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-            </svg>
-          </button>
         </div>
 
-        <!-- Text input -->
-        <div class="flex-1">
-          <textarea
-            ref="textareaRef"
-            v-model="messageText"
-            @keydown="handleKeydown"
-            @click="saveCaretPos"
-            @keyup="saveCaretPos"
-            placeholder="Написать сообщение..."
-            rows="1"
-            :disabled="isSending"
-            class="w-full resize-none rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-shadow max-h-36 overflow-y-auto disabled:opacity-60"
-            style="line-height: 1.5;"
-          />
-        </div>
+        <!-- Hidden file input -->
+        <input ref="fileInputRef" type="file" multiple class="hidden" @change="handleFileSelect" />
 
-        <!-- Right: voice + send -->
-        <div class="flex gap-0.5 pb-1.5">
-          <button
-            v-if="!messageText.trim() && pendingFiles.length === 0 && !isSending"
-            @click="handleVoice"
-            class="p-2.5 text-gray-400 hover:text-red-500 hover:bg-gray-100 rounded-full transition-colors"
-            title="Голосовое сообщение"
-            type="button"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-            </svg>
-          </button>
-
-          <button
-            v-if="messageText.trim() || pendingFiles.length > 0 || isSending"
-            @click="handleSend"
-            :disabled="isSending || (!messageText.trim() && pendingFiles.length === 0)"
-            class="p-2.5 bg-blue-500 text-white rounded-full hover:bg-blue-600 active:scale-95 transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
-            title="Отправить"
-            type="button"
-          >
-            <svg v-if="isSending" class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
-            <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-            </svg>
-          </button>
-        </div>
-
-      </div>
+      </template>
     </div>
 
-    <!-- Hidden file input -->
-    <input ref="fileInputRef" type="file" multiple class="hidden" @change="handleFileSelect" />
 
     <!-- Lightbox -->
     <Teleport to="body">
