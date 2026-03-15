@@ -62,10 +62,17 @@ const languages = [
   { code: 'de', flag: '🇩🇪', name: 'Deutsch',  nativeName: 'Deutsch' },
 ]
 
-function isMobileDevice(deviceName: string): boolean {
-  const lower = deviceName.toLowerCase()
-  return lower.includes('iphone') || lower.includes('android') ||
-         lower.includes('ipad') || lower.includes('mobile')
+type DeviceType = 'iphone' | 'android' | 'macos' | 'windows' | 'linux' | 'phone' | 'desktop'
+
+function getDeviceType(name: string): DeviceType {
+  const l = name.toLowerCase()
+  if (l.includes('iphone') || l.includes('ipad') || l.includes('ios')) return 'iphone'
+  if (l.includes('android'))                                             return 'android'
+  if (l.includes('mac') || l.includes('macos') || l.includes('macbook')) return 'macos'
+  if (l.includes('windows'))                                             return 'windows'
+  if (l.includes('linux') || l.includes('ubuntu') || l.includes('debian') || l.includes('fedora')) return 'linux'
+  if (l.includes('mobile'))                                              return 'phone'
+  return 'desktop'
 }
 
 function formatDate(iso: string): string {
@@ -251,25 +258,76 @@ function formatDate(iso: string): string {
               class="w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-0.5"
               :class="session.is_current ? 'bg-blue-50' : 'bg-gray-100'"
             >
-              <!-- Телефон -->
+              <!-- iPhone / iPad / iOS -->
               <svg
-                v-if="isMobileDevice(session.device_name)"
-                class="w-4 h-4"
-                :class="session.is_current ? 'text-blue-500' : 'text-gray-400'"
+                v-if="getDeviceType(session.device_name) === 'iphone'"
+                class="w-4 h-4" :class="session.is_current ? 'text-blue-500' : 'text-gray-400'"
                 fill="none" stroke="currentColor" viewBox="0 0 24 24"
               >
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
               </svg>
-              <!-- Монитор -->
+
+              <!-- Android -->
+              <svg
+                v-else-if="getDeviceType(session.device_name) === 'android'"
+                class="w-4 h-4" :class="session.is_current ? 'text-blue-500' : 'text-gray-400'"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M8 21h8a2 2 0 002-2V9a2 2 0 00-2-2H8a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                <path stroke-linecap="round" stroke-width="2"
+                  d="M9 4l2 3m6-3l-2 3M6 12h.01M18 12h.01"/>
+              </svg>
+
+              <!-- macOS / MacBook -->
+              <svg
+                v-else-if="getDeviceType(session.device_name) === 'macos'"
+                class="w-4 h-4" :class="session.is_current ? 'text-blue-500' : 'text-gray-400'"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 6h16v11H4V6zm0 11h16M10 20h4"/>
+                <circle cx="12" cy="11" r="1.5" fill="currentColor" stroke="none"/>
+              </svg>
+
+              <!-- Windows -->
+              <svg
+                v-else-if="getDeviceType(session.device_name) === 'windows'"
+                class="w-4 h-4" :class="session.is_current ? 'text-blue-500' : 'text-gray-400'"
+                fill="currentColor" viewBox="0 0 24 24"
+              >
+                <path d="M3 3h9v9H3V3zm0 10h9v9H3v-9zm10-10h9v9h-9V3zm0 10h9v9h-9v-9z"/>
+              </svg>
+
+              <!-- Linux -->
+              <svg
+                v-else-if="getDeviceType(session.device_name) === 'linux'"
+                class="w-4 h-4" :class="session.is_current ? 'text-blue-500' : 'text-gray-400'"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+
+              <!-- Generic mobile -->
+              <svg
+                v-else-if="getDeviceType(session.device_name) === 'phone'"
+                class="w-4 h-4" :class="session.is_current ? 'text-blue-500' : 'text-gray-400'"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+              </svg>
+
+              <!-- Generic desktop (fallback) -->
               <svg
                 v-else
-                class="w-4 h-4"
-                :class="session.is_current ? 'text-blue-500' : 'text-gray-400'"
+                class="w-4 h-4" :class="session.is_current ? 'text-blue-500' : 'text-gray-400'"
                 fill="none" stroke="currentColor" viewBox="0 0 24 24"
               >
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
               </svg>
             </div>
 
