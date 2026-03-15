@@ -155,6 +155,10 @@ class ApiClient {
     return this.client.delete(`/sessions/${sessionId}`);
   }
 
+  async endOtherSessions(): Promise<AxiosResponse<ApiResponse>> {
+    return this.client.delete('/sessions/others');
+  }
+
   // Status
   async setStatus(status: string, customMessage?: string): Promise<AxiosResponse<SetStatusResponse>> {
     return this.client.post('/users/status', { online_status: status, custom_status: customMessage });

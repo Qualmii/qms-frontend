@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useProfileStore } from '@/stores/profile'
+import { apiClient } from '@/services/api'
 import { STATUS_CONFIG } from '@/utils/statusConfig'
 import type { Session } from '@/types/api'
 
-type SessionWithCurrent = Session & { is_current?: boolean }
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -62,9 +62,10 @@ const saveUsername = async () => {
     }
     usernameSuccess.value = true
     setTimeout(() => { usernameSuccess.value = false }, 3000)
-  } catch (err: any) {
-    usernameApiError.value = err?.response?.data?.message
-      ?? err?.response?.data?.error
+  } catch (err: unknown) {
+    const e = err as { response?: { data?: { message?: string; error?: string } } }
+    usernameApiError.value = e?.response?.data?.message
+      ?? e?.response?.data?.error
       ?? 'Не удалось сохранить ник'
   } finally {
     isSavingUsername.value = false
@@ -85,44 +86,115 @@ const deleteUsername = async () => {
     usernameInput.value = ''
     usernameSuccess.value = true
     setTimeout(() => { usernameSuccess.value = false }, 3000)
-  } catch (err: any) {
-    usernameApiError.value = err?.response?.data?.message
-      ?? err?.response?.data?.error
+  } catch (err: unknown) {
+    const e = err as { response?: { data?: { message?: string; error?: string } } }
+    usernameApiError.value = e?.response?.data?.message
+      ?? e?.response?.data?.error
       ?? 'Не удалось удалить ник'
   } finally {
     isDeletingUsername.value = false
   }
 }
 
-// ─── Сессии (mock-данные для вёрстки) ─────────────────────────────────────
-const sessions = ref<SessionWithCurrent[]>([
-  {
-    id: 1,
-    device_name: 'Chrome · macOS',
-    ip_address: '192.168.1.1',
-    confirmed_at: '2026-03-15T08:00:00Z',
-    expires_at: '2026-04-14T08:00:00Z',
-    is_current: true,
-  },
-  {
-    id: 2,
-    device_name: 'Safari · iPhone 15',
-    ip_address: '10.0.0.5',
-    confirmed_at: '2026-03-14T18:30:00Z',
-    expires_at: '2026-04-13T18:30:00Z',
-    is_current: false,
-  },
-  {
-    id: 3,
-    device_name: 'Firefox · Windows 11',
-    ip_address: '172.16.0.10',
-    confirmed_at: '2026-03-13T09:15:00Z',
-    expires_at: '2026-04-12T09:15:00Z',
-    is_current: false,
-  },
-])
+// ─── Сессии ───────────────────────────────────────────────────────────────
+const sessions          = ref<Session[]>([])
+const isLoadingSessions = ref(false)
+const sessionsError     = ref<string | null>(null)
+const endingSessionId   = ref<number | null>(null)
+const isEndingAll       = ref(false)
+
+// Модальное окно подтверждения
+const confirm = ref<{
+  visible: boolean
+  title: string
+  message: string
+  action: (() => Promise<void>) | null
+}>({
+  visible: false,
+  title: '',
+  message: '',
+  action: null,
+})
+
+const closeConfirm = () => {
+  confirm.value.visible = false
+  confirm.value.action = null
+}
+
+const runConfirm = async () => {
+  if (!confirm.value.action) return
+  const action = confirm.value.action
+  closeConfirm()
+  await action()
+}
 
 const otherSessions = computed(() => sessions.value.filter(s => !s.is_current))
+
+const loadSessions = async () => {
+  isLoadingSessions.value = true
+  sessionsError.value = null
+  try {
+    const res = await apiClient.getSessions()
+    sessions.value = res.data
+  } catch {
+    sessionsError.value = 'Не удалось загрузить сессии'
+  } finally {
+    isLoadingSessions.value = false
+  }
+}
+
+const doEndSession = async (sessionId: number) => {
+  if (endingSessionId.value !== null || isEndingAll.value) return
+  endingSessionId.value = sessionId
+  try {
+    await apiClient.endSession(sessionId)
+    sessions.value = sessions.value.filter(s => s.id !== sessionId)
+  } catch {
+    sessionsError.value = 'Не удалось завершить сессию'
+    setTimeout(() => { sessionsError.value = null }, 3000)
+  } finally {
+    endingSessionId.value = null
+  }
+}
+
+const doEndAllOtherSessions = async () => {
+  if (isEndingAll.value || endingSessionId.value !== null) return
+  isEndingAll.value = true
+  try {
+    await apiClient.endOtherSessions()
+    sessions.value = sessions.value.filter(s => s.is_current)
+  } catch {
+    sessionsError.value = 'Не удалось завершить сессии'
+    setTimeout(() => { sessionsError.value = null }, 3000)
+  } finally {
+    isEndingAll.value = false
+  }
+}
+
+// Запросить подтверждение перед завершением одной сессии
+const askEndSession = (session: Session) => {
+  confirm.value = {
+    visible: true,
+    title: 'Завершить сессию?',
+    message: `Устройство «${session.device_name}» (${session.ip_address}) будет отключено.`,
+    action: () => doEndSession(session.id),
+  }
+}
+
+// Запросить подтверждение перед завершением всех других сессий
+const askEndAllOtherSessions = () => {
+  const count = otherSessions.value.length
+  confirm.value = {
+    visible: true,
+    title: 'Завершить все другие сессии?',
+    message: `Будет отключено устройств: ${count}. Текущая сессия останется активной.`,
+    action: doEndAllOtherSessions,
+  }
+}
+
+onMounted(() => {
+  loadSessions()
+})
 
 // ─── Язык ─────────────────────────────────────────────────────────────────
 const selectedLocale = ref(user.value?.locale ?? 'ru')
@@ -366,16 +438,41 @@ function formatDate(iso: string): string {
       <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
         <div class="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
           <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Активные сессии</h2>
-          <span class="text-xs font-semibold text-white bg-blue-500 rounded-full px-2 py-0.5">
+          <span v-if="!isLoadingSessions" class="text-xs font-semibold text-white bg-blue-500 rounded-full px-2 py-0.5">
             {{ sessions.length }}
           </span>
         </div>
 
-        <ul class="divide-y divide-gray-100">
+        <!-- Скелетон загрузки -->
+        <ul v-if="isLoadingSessions" class="divide-y divide-gray-100">
+          <li v-for="i in 2" :key="i" class="flex items-start gap-3 px-4 py-4 animate-pulse">
+            <div class="w-9 h-9 rounded-full bg-gray-200 shrink-0" />
+            <div class="flex-1 space-y-2 pt-1">
+              <div class="h-3.5 bg-gray-200 rounded w-1/2" />
+              <div class="h-3 bg-gray-100 rounded w-1/3" />
+            </div>
+          </li>
+        </ul>
+
+        <!-- Ошибка загрузки -->
+        <div v-else-if="sessionsError && sessions.length === 0" class="px-4 py-6 text-center">
+          <p class="text-sm text-red-500 mb-3">{{ sessionsError }}</p>
+          <button
+            type="button"
+            class="text-sm text-blue-600 hover:underline"
+            @click="loadSessions"
+          >
+            Попробовать снова
+          </button>
+        </div>
+
+        <!-- Список сессий -->
+        <ul v-else class="divide-y divide-gray-100">
           <li
             v-for="session in sessions"
             :key="session.id"
-            class="flex items-start gap-3 px-4 py-4"
+            class="flex items-start gap-3 px-4 py-4 transition-opacity"
+            :class="endingSessionId === session.id ? 'opacity-50' : 'opacity-100'"
           >
             <!-- Иконка устройства -->
             <div
@@ -383,73 +480,52 @@ function formatDate(iso: string): string {
               :class="session.is_current ? 'bg-blue-50' : 'bg-gray-100'"
             >
               <!-- iPhone / iPad / iOS -->
-              <svg
-                v-if="getDeviceType(session.device_name) === 'iphone'"
+              <svg v-if="getDeviceType(session.device_name) === 'iphone'"
                 class="w-4 h-4" :class="session.is_current ? 'text-blue-500' : 'text-gray-400'"
-                fill="none" stroke="currentColor" viewBox="0 0 24 24"
-              >
+                fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
               </svg>
-
               <!-- Android -->
-              <svg
-                v-else-if="getDeviceType(session.device_name) === 'android'"
+              <svg v-else-if="getDeviceType(session.device_name) === 'android'"
                 class="w-4 h-4" :class="session.is_current ? 'text-blue-500' : 'text-gray-400'"
-                fill="none" stroke="currentColor" viewBox="0 0 24 24"
-              >
+                fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M8 21h8a2 2 0 002-2V9a2 2 0 00-2-2H8a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                <path stroke-linecap="round" stroke-width="2"
-                  d="M9 4l2 3m6-3l-2 3M6 12h.01M18 12h.01"/>
+                <path stroke-linecap="round" stroke-width="2" d="M9 4l2 3m6-3l-2 3M6 12h.01M18 12h.01"/>
               </svg>
-
-              <!-- macOS / MacBook -->
-              <svg
-                v-else-if="getDeviceType(session.device_name) === 'macos'"
+              <!-- macOS -->
+              <svg v-else-if="getDeviceType(session.device_name) === 'macos'"
                 class="w-4 h-4" :class="session.is_current ? 'text-blue-500' : 'text-gray-400'"
-                fill="none" stroke="currentColor" viewBox="0 0 24 24"
-              >
+                fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M4 6h16v11H4V6zm0 11h16M10 20h4"/>
                 <circle cx="12" cy="11" r="1.5" fill="currentColor" stroke="none"/>
               </svg>
-
               <!-- Windows -->
-              <svg
-                v-else-if="getDeviceType(session.device_name) === 'windows'"
+              <svg v-else-if="getDeviceType(session.device_name) === 'windows'"
                 class="w-4 h-4" :class="session.is_current ? 'text-blue-500' : 'text-gray-400'"
-                fill="currentColor" viewBox="0 0 24 24"
-              >
+                fill="currentColor" viewBox="0 0 24 24">
                 <path d="M3 3h9v9H3V3zm0 10h9v9H3v-9zm10-10h9v9h-9V3zm0 10h9v9h-9v-9z"/>
               </svg>
-
               <!-- Linux -->
-              <svg
-                v-else-if="getDeviceType(session.device_name) === 'linux'"
+              <svg v-else-if="getDeviceType(session.device_name) === 'linux'"
                 class="w-4 h-4" :class="session.is_current ? 'text-blue-500' : 'text-gray-400'"
-                fill="none" stroke="currentColor" viewBox="0 0 24 24"
-              >
+                fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
               </svg>
-
               <!-- Generic mobile -->
-              <svg
-                v-else-if="getDeviceType(session.device_name) === 'phone'"
+              <svg v-else-if="getDeviceType(session.device_name) === 'phone'"
                 class="w-4 h-4" :class="session.is_current ? 'text-blue-500' : 'text-gray-400'"
-                fill="none" stroke="currentColor" viewBox="0 0 24 24"
-              >
+                fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
               </svg>
-
               <!-- Generic desktop (fallback) -->
-              <svg
-                v-else
+              <svg v-else
                 class="w-4 h-4" :class="session.is_current ? 'text-blue-500' : 'text-gray-400'"
-                fill="none" stroke="currentColor" viewBox="0 0 24 24"
-              >
+                fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
               </svg>
@@ -470,26 +546,59 @@ function formatDate(iso: string): string {
               <p class="text-xs text-gray-400">Вход: {{ formatDate(session.confirmed_at) }}</p>
             </div>
 
-            <!-- Кнопка завершения (только для других сессий) -->
+            <!-- Кнопка завершения -->
             <button
               v-if="!session.is_current"
               type="button"
-              class="shrink-0 text-xs font-medium text-red-600 border border-red-200
-                     rounded-lg px-3 py-1.5 hover:bg-red-50 transition-colors mt-0.5"
+              class="shrink-0 text-xs font-medium rounded-lg px-3 py-1.5 mt-0.5
+                     border transition-colors flex items-center gap-1.5
+                     disabled:opacity-40 disabled:cursor-not-allowed"
+              :class="endingSessionId === session.id
+                ? 'border-gray-200 text-gray-400'
+                : 'border-red-200 text-red-600 hover:bg-red-50'"
+              :disabled="endingSessionId !== null || isEndingAll"
+              @click="askEndSession(session)"
             >
-              Завершить
+              <svg
+                v-if="endingSessionId === session.id"
+                class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"
+              >
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+              </svg>
+              {{ endingSessionId === session.id ? '…' : 'Завершить' }}
             </button>
           </li>
         </ul>
 
-        <!-- Завершить все другие -->
-        <div v-if="otherSessions.length > 0" class="px-4 py-3 border-t border-gray-100 bg-gray-50">
+        <!-- Подвал: ошибка действия + кнопка "Завершить все" -->
+        <div
+          v-if="!isLoadingSessions"
+          class="px-4 py-3 border-t border-gray-100 bg-gray-50 space-y-2"
+        >
+          <!-- Ошибка действия (end/end-all) -->
+          <p v-if="sessionsError && sessions.length > 0" class="text-xs text-red-500 text-center">
+            {{ sessionsError }}
+          </p>
+
+          <!-- Кнопка "завершить все другие" -->
           <button
+            v-if="otherSessions.length > 0"
             type="button"
-            class="w-full py-2 px-4 text-sm font-medium text-red-600 border border-red-200
-                   rounded-xl hover:bg-red-50 transition-colors"
+            class="w-full py-2 px-4 text-sm font-medium rounded-xl border transition-colors
+                   flex items-center justify-center gap-2
+                   disabled:opacity-40 disabled:cursor-not-allowed"
+            :class="isEndingAll
+              ? 'border-gray-200 text-gray-400'
+              : 'border-red-200 text-red-600 hover:bg-red-50'"
+            :disabled="isEndingAll || endingSessionId !== null"
+            @click="askEndAllOtherSessions"
           >
-            Завершить все другие сессии ({{ otherSessions.length }})
+            <svg v-if="isEndingAll" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+            </svg>
+            {{ isEndingAll ? 'Завершаем…' : `Завершить все другие сессии (${otherSessions.length})` }}
           </button>
         </div>
       </div>
@@ -545,6 +654,82 @@ function formatDate(iso: string): string {
       </div>
 
     </main>
+    <!-- Модальное окно подтверждения -->
+    <Transition
+      enter-active-class="transition duration-150 ease-out"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition duration-100 ease-in"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
+      <div
+        v-if="confirm.visible"
+        class="fixed inset-0 z-50 flex items-center justify-center px-4"
+      >
+        <!-- Затемнение фона -->
+        <div
+          class="absolute inset-0 bg-black/40 backdrop-blur-sm"
+          @click="closeConfirm"
+        />
+
+        <!-- Карточка -->
+        <Transition
+          enter-active-class="transition duration-150 ease-out"
+          enter-from-class="opacity-0 scale-95"
+          enter-to-class="opacity-100 scale-100"
+          leave-active-class="transition duration-100 ease-in"
+          leave-from-class="opacity-100 scale-100"
+          leave-to-class="opacity-0 scale-95"
+        >
+          <div
+            v-if="confirm.visible"
+            class="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6"
+          >
+            <!-- Иконка предупреждения -->
+            <div class="flex justify-center mb-4">
+              <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Заголовок -->
+            <h3 class="text-base font-semibold text-gray-900 text-center mb-2">
+              {{ confirm.title }}
+            </h3>
+
+            <!-- Сообщение -->
+            <p class="text-sm text-gray-500 text-center mb-6 leading-relaxed">
+              {{ confirm.message }}
+            </p>
+
+            <!-- Кнопки -->
+            <div class="flex gap-3">
+              <button
+                type="button"
+                class="flex-1 py-2.5 px-4 text-sm font-medium text-gray-700
+                       bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
+                @click="closeConfirm"
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                class="flex-1 py-2.5 px-4 text-sm font-medium text-white
+                       bg-red-600 rounded-xl hover:bg-red-700 transition-colors"
+                @click="runConfirm"
+              >
+                Завершить
+              </button>
+            </div>
+          </div>
+        </Transition>
+      </div>
+    </Transition>
+
   </div>
 </template>
 
