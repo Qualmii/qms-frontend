@@ -477,8 +477,9 @@ onUnmounted(() => {
   <div class="flex flex-col h-full relative overflow-hidden">
 
     <!-- Динамический градиентный фон -->
+    <!-- Увеличенный на 40px со всех сторон для плавной ambient-анимации без резких краёв -->
     <div
-      class="absolute inset-0 pointer-events-none gradient-ambient"
+      class="absolute -inset-10 pointer-events-none gradient-ambient"
       :class="{ 'gradient-pulse': isPulsing }"
       :style="gradientStyle"
     />
@@ -487,10 +488,10 @@ onUnmounted(() => {
     <div class="relative z-10 flex flex-col h-full">
 
     <!-- Header -->
-    <div class="flex items-center gap-3 px-4 py-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-100 dark:border-gray-700 shadow-sm">
+    <div class="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 bg-white/50 dark:bg-gray-800/50 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm">
       <div class="relative flex-shrink-0">
         <!-- Фото или инициалы -->
-        <div class="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white shadow-sm">
+        <div class="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white/50 dark:ring-gray-700/50 shadow-sm">
           <img
             v-if="chatAvatarUrl"
             :src="chatAvatarUrl"
@@ -507,7 +508,7 @@ onUnmounted(() => {
         <!-- Индикатор онлайн -->
         <span
           v-if="chat.type === 'private'"
-          class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white transition-colors"
+          class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white/70 dark:border-gray-800/70 transition-colors"
           :class="isOnline ? 'bg-green-400' : 'bg-gray-300'"
         />
       </div>
@@ -692,7 +693,7 @@ onUnmounted(() => {
     </div>
 
     <!-- Input area -->
-    <div class="bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 px-4 py-3 shadow-[0_-1px_4px_rgba(0,0,0,0.04)] dark:shadow-[0_-1px_4px_rgba(0,0,0,0.2)]">
+    <div class="bg-white/50 dark:bg-gray-800/50 backdrop-blur-md border-t border-gray-200/50 dark:border-gray-700/50 px-4 py-3 shadow-[0_-1px_8px_rgba(0,0,0,0.06)] dark:shadow-[0_-1px_8px_rgba(0,0,0,0.3)]">
 
       <!-- Ошибка отправки -->
       <div v-if="sendError" class="flex items-center gap-2 mb-2 px-1 text-red-500 dark:text-red-400 text-xs">
@@ -941,20 +942,28 @@ onUnmounted(() => {
 }
 
 /* Ambient анимация градиента */
+/* Создаёт едва заметное "дыхание" фона без явного масштабирования */
 @keyframes gradientFloat {
   0%, 100% {
-    transform: translate(0, 0) scale(1);
+    transform: translate(0, 0) scale(1.1);
+    filter: brightness(1) saturate(1);
   }
-  33% {
-    transform: translate(10px, -10px) scale(1.05);
+  25% {
+    transform: translate(5px, -8px) scale(1.1);
+    filter: brightness(1.02) saturate(1.05);
   }
-  66% {
-    transform: translate(-10px, 10px) scale(0.95);
+  50% {
+    transform: translate(-3px, 5px) scale(1.1);
+    filter: brightness(0.98) saturate(0.95);
+  }
+  75% {
+    transform: translate(-8px, -3px) scale(1.1);
+    filter: brightness(1.01) saturate(1.02);
   }
 }
 
 .gradient-ambient {
-  animation: gradientFloat 30s ease-in-out infinite;
+  animation: gradientFloat 45s ease-in-out infinite;
 }
 
 /* Пульсация при новых сообщениях */
