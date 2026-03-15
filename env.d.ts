@@ -6,6 +6,11 @@ interface ImportMetaEnv {
   readonly VITE_API_TIMEOUT?: string
   readonly VITE_WS_RECONNECTION_ATTEMPTS?: string
   readonly VITE_WS_RECONNECTION_DELAY?: string
+  readonly VITE_REVERB_APP_KEY: string
+  readonly VITE_REVERB_HOST: string
+  readonly VITE_REVERB_WS_PORT?: string
+  readonly VITE_REVERB_WSS_PORT?: string
+  readonly VITE_REVERB_SCHEME?: string
 }
 
 interface ImportMeta {

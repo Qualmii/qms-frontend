@@ -3,6 +3,8 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useChatStore } from '@/stores/chat';
+import { useCallStore } from '@/stores/call';
+import { webSocketService } from '@/services/websocket';
 import ChatSearch from '@/components/ChatSearch.vue';
 import ChatList from '@/components/ChatList.vue';
 import UserSearch from '@/components/UserSearch.vue';
@@ -11,6 +13,7 @@ import ChatWindow from '@/components/ChatWindow.vue';
 const router = useRouter();
 const authStore = useAuthStore();
 const chatStore = useChatStore();
+const callStore = useCallStore();
 
 const selectedChatId = ref<number | null>(null);
 const searchQuery = ref('');
@@ -26,6 +29,14 @@ const currentChatData = computed(() =>
 
 onMounted(async () => {
   await chatStore.fetchChats();
+
+  // Подписываемся на личный канал пользователя (входящие звонки, онлайн-статусы)
+  if (authStore.user?.id && webSocketService.isConnected()) {
+    webSocketService.subscribeToUserChannel(
+      authStore.user.id,
+      callStore.handleCallUpdated,
+    );
+  }
 });
 
 const handleSearch = (query: string) => {

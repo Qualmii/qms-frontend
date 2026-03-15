@@ -20,6 +20,8 @@ export const useAuthStore = defineStore('auth', () => {
     if (storedToken && storedUser) {
       token.value = storedToken;
       user.value = JSON.parse(storedUser);
+      // Переподключаем WebSocket после перезагрузки страницы
+      webSocketService.connect(storedToken);
     }
   };
 
@@ -114,6 +116,9 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('user', JSON.stringify(newUser));
 
     error.value = null;
+
+    // Подключаем WebSocket сразу после успешной авторизации
+    webSocketService.connect(newToken);
   };
 
   const clearAuthData = () => {

@@ -54,6 +54,22 @@ const getChatName = (chat: Chat): string => {
 const getInitials = (chat: Chat): string => {
   return getChatName(chat).substring(0, 2).toUpperCase();
 };
+
+type MessageType = 'text' | 'image' | 'voice' | 'video' | 'file';
+
+const TYPE_LABELS: Record<Exclude<MessageType, 'text'>, string> = {
+  image: '🖼 Изображение',
+  voice: '🎤 Голосовое сообщение',
+  video: '📹 Видео сообщение',
+  file:  '📎 Вложение',
+};
+
+const getLastMessagePreview = (chat: Chat): string => {
+  const msg = chat.last_message;
+  if (!msg) return '';
+  if (msg.type === 'text') return msg.content || 'Сообщение';
+  return TYPE_LABELS[msg.type as Exclude<MessageType, 'text'>] ?? '📎 Вложение';
+};
 </script>
 
 <template>
@@ -87,8 +103,10 @@ const getInitials = (chat: Chat): string => {
             {{ formatTime(chat.last_message.created_at) }}
           </span>
         </div>
-        <p v-if="chat.last_message" class="text-sm text-gray-600 truncate">
-          {{ chat.last_message.content || 'Вложение' }}
+        <p v-if="chat.last_message" class="text-sm truncate"
+          :class="chat.last_message.type === 'text' ? 'text-gray-600' : 'text-gray-400 italic'"
+        >
+          {{ getLastMessagePreview(chat) }}
         </p>
         <p v-else class="text-sm text-gray-400 italic">Нет сообщений</p>
       </div>

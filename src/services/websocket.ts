@@ -23,6 +23,9 @@ class WebSocketService {
   connect(token: string): void {
     if (this.echo) return;
 
+    // Базовый URL сервера без /api/v1 — broadcasting/auth регистрируется на корне
+    const baseUrl = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api/v1').replace(/\/api\/v1\/?$/, '');
+
     this.echo = new Echo({
       broadcaster: 'reverb',
       key: import.meta.env.VITE_REVERB_APP_KEY as string,
@@ -31,7 +34,7 @@ class WebSocketService {
       wssPort: Number(import.meta.env.VITE_REVERB_WSS_PORT ?? 443),
       forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'http') === 'https',
       enabledTransports: ['ws', 'wss'],
-      authEndpoint: `${import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api/v1'}/broadcasting/auth`,
+      authEndpoint: `${baseUrl}/broadcasting/auth`,
       auth: {
         headers: {
           Authorization: `Bearer ${token}`,
