@@ -1,5 +1,5 @@
 import { defineStore, acceptHMRUpdate } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import type { User, LanguagesResponse } from '@/types/api';
 import { apiClient } from '@/services/api';
 
@@ -159,27 +159,46 @@ export const useProfileStore = defineStore('profile', () => {
   };
 
   const setTheme = (newTheme: 'light' | 'dark') => {
+    console.log('[Theme] 🎯 setTheme called with:', newTheme);
     theme.value = newTheme;
     localStorage.setItem('theme', newTheme);
-    applyTheme();
+    // НЕ вызываем applyTheme здесь - это сделает watch
   };
 
   const toggleTheme = () => {
     const newTheme = theme.value === 'light' ? 'dark' : 'light';
+    console.log('[Theme] 🔄 toggleTheme: switching from', theme.value, 'to', newTheme);
     setTheme(newTheme);
   };
 
   const applyTheme = () => {
-    // Применяем или удаляем класс 'dark' на документе
-    console.log('Applying theme:', theme.value);
+    console.log('[Theme] === applyTheme called ===');
+    console.log('[Theme] Current theme value:', theme.value);
+    console.log('[Theme] Current HTML classes BEFORE:', document.documentElement.className);
+
+    // Альтернативный метод - через setAttribute
     if (theme.value === 'dark') {
-      document.documentElement.classList.add('dark');
-      console.log('Dark mode enabled');
+      document.documentElement.setAttribute('class', 'dark');
+      console.log('[Theme] ✅ DARK mode - set class via setAttribute');
     } else {
-      document.documentElement.classList.remove('dark');
-      console.log('Light mode enabled');
+      document.documentElement.setAttribute('class', '');
+      console.log('[Theme] ☀️ LIGHT mode - removed all classes via setAttribute');
     }
+
+    console.log('[Theme] Final HTML classes AFTER:', document.documentElement.className);
+    console.log('[Theme] classList.contains("dark"):', document.documentElement.classList.contains('dark'));
+
+    // Проверяем computed style
+    const computedBg = window.getComputedStyle(document.body).backgroundColor;
+    console.log('[Theme] Body computed backgroundColor:', computedBg);
+    console.log('[Theme] === applyTheme finished ===');
   };
+
+  // Watch для автоматического применения темы при изменении
+  watch(theme, (newTheme, oldTheme) => {
+    console.log('[Theme] 🔔 Watch triggered! Theme changed from', oldTheme, 'to', newTheme);
+    applyTheme();
+  });
 
   return {
     // State

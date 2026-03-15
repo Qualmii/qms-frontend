@@ -1,4 +1,7 @@
 @import "tailwindcss";
+
+@variant dark (&:is(.dark, .dark *));
+
 *, *::before, *::after { box-sizing: border-box; }
 html, body, #app {
   height: 100%;
