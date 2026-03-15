@@ -3,6 +3,7 @@ import { ref, computed } from 'vue';
 import type { Chat, Message, WsMessageSentPayload, WsUserPresencePayload } from '@/types/api';
 import { apiClient } from '@/services/api';
 import { webSocketService } from '@/services/websocket';
+import { useAuthStore } from '@/stores/auth';
 
 // Вспомогательная функция — извлекает сообщение об ошибке из unknown
 function getErrorMessage(err: unknown, fallback: string): string {
@@ -71,6 +72,10 @@ export const useChatStore = defineStore('chat', () => {
       const newChat = response.data;
 
       chats.value.unshift(newChat);
+
+      // Подписываемся на канал нового чата
+      webSocketService.subscribeToChatChannel(newChat.id, handleWsMessageSent, updateUserPresence);
+
       return newChat;
     } catch (err: unknown) {
       error.value = getErrorMessage(err, 'Failed to create chat');
@@ -79,23 +84,33 @@ export const useChatStore = defineStore('chat', () => {
   };
 
   const selectChat = async (chatId: number) => {
-    // Отписываемся от предыдущего канала чата
-    if (currentChat.value && currentChat.value.id !== chatId) {
-      webSocketService.unsubscribeFromChatChannel(currentChat.value.id);
-    }
-
     const chat = chats.value.find(c => c.id === chatId);
     if (!chat) return;
 
     currentChat.value = chat;
 
-    // Подписываемся на Reverb-канал нового чата
-    webSocketService.subscribeToChatChannel(chatId, handleWsMessageSent, updateUserPresence);
-
     // Load messages if not already loaded
     if (!messages.value[chatId]) {
       await fetchMessages(chatId);
     }
+  };
+
+  /**
+   * Подписывается на каналы всех чатов для получения уведомлений о новых сообщениях
+   */
+  const subscribeToAllChats = () => {
+    chats.value.forEach(chat => {
+      webSocketService.subscribeToChatChannel(chat.id, handleWsMessageSent, updateUserPresence);
+    });
+  };
+
+  /**
+   * Отписывается от всех каналов чатов
+   */
+  const unsubscribeFromAllChats = () => {
+    chats.value.forEach(chat => {
+      webSocketService.unsubscribeFromChatChannel(chat.id);
+    });
   };
 
   const fetchMessages = async (chatId: number, page = 1) => {
@@ -160,6 +175,9 @@ export const useChatStore = defineStore('chat', () => {
       } else {
         // Add new chat to the beginning of the list
         chats.value.unshift(chat);
+
+        // Подписываемся на канал нового чата
+        webSocketService.subscribeToChatChannel(chat.id, handleWsMessageSent, updateUserPresence);
       }
 
       return chat;
@@ -198,7 +216,14 @@ export const useChatStore = defineStore('chat', () => {
     try {
       const response = await apiClient.getOrCreateFavoritesChat();
       const chat = response.data;
-      if (!chats.value.find(c => c.id === chat.id)) chats.value.unshift(chat);
+
+      if (!chats.value.find(c => c.id === chat.id)) {
+        chats.value.unshift(chat);
+
+        // Подписываемся на канал нового чата
+        webSocketService.subscribeToChatChannel(chat.id, handleWsMessageSent, updateUserPresence);
+      }
+
       return chat;
     } catch (err: unknown) {
       error.value = getErrorMessage(err, 'Failed to get favorites chat');
@@ -266,10 +291,19 @@ export const useChatStore = defineStore('chat', () => {
       }
     }
 
-    // Update last message in chat
+    // Update last message in chat and unread count
     const chat = chats.value.find((c) => c.id === message.chat_id);
     if (chat) {
       chat.last_message = message;
+
+      // Увеличиваем счётчик непрочитанных, если чат не открыт и сообщение не от текущего пользователя
+      if (currentChat.value?.id !== message.chat_id) {
+        const authStore = useAuthStore();
+
+        if (message.sender_id !== authStore.user?.id) {
+          chat.unread_count = (chat.unread_count || 0) + 1;
+        }
+      }
     }
   };
 
@@ -315,6 +349,8 @@ export const useChatStore = defineStore('chat', () => {
     fetchChats,
     createChat,
     selectChat,
+    subscribeToAllChats,
+    unsubscribeFromAllChats,
     fetchMessages,
     sendMessage,
     sendFileMessage,

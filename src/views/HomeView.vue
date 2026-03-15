@@ -33,6 +33,11 @@ const currentChatData = computed(() =>
 onMounted(async () => {
   await chatStore.fetchChats();
 
+  // Подписываемся на каналы всех чатов для получения уведомлений о новых сообщениях
+  if (webSocketService.isConnected()) {
+    chatStore.subscribeToAllChats();
+  }
+
   // Загружаем список статусов один раз — нужен ChatWindow для отображения статуса собеседника
   if (Object.keys(profileStore.availableStatuses).length === 0) {
     profileStore.fetchAvailableStatuses();
