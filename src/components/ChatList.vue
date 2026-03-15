@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { Chat } from '@/types/api';
+import type { Chat, ChatUser } from '@/types/api';
 import { useAuthStore } from '@/stores/auth';
+import { getStatusEmoji } from '@/utils/statusConfig';
 
 interface Props {
   chats: Chat[];
@@ -70,6 +71,12 @@ const getLastMessagePreview = (chat: Chat): string => {
   if (msg.type === 'text') return msg.content || 'Сообщение';
   return TYPE_LABELS[msg.type as Exclude<MessageType, 'text'>] ?? '📎 Вложение';
 };
+
+// Собеседник в приватном чате
+const getOtherUser = (chat: Chat): ChatUser | undefined =>
+  chat.type === 'private'
+    ? chat.users?.find(u => u.id !== authStore.user?.id)
+    : undefined;
 </script>
 
 <template>
@@ -87,12 +94,17 @@ const getLastMessagePreview = (chat: Chat): string => {
       @click="emit('selectChat', chat.id)"
     >
       <!-- Avatar -->
-      <div class="shrink-0">
+      <div class="relative shrink-0">
         <div
           class="w-12 h-12 rounded-full bg-linear-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold"
         >
           {{ getInitials(chat) }}
         </div>
+        <!-- Иконка онлайн-статуса собеседника -->
+        <span
+          v-if="getOtherUser(chat)?.status === 'online'"
+          class="absolute -bottom-0.5 -right-0.5 w-5 h-5 flex items-center justify-center bg-white rounded-full shadow-sm text-xs leading-none"
+        >{{ getStatusEmoji(getOtherUser(chat)?.online_status) }}</span>
       </div>
 
       <!-- Chat Info -->
