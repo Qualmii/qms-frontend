@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useProfileStore } from '@/stores/profile'
 import { STATUS_CONFIG } from '@/utils/statusConfig'
 
+const router = useRouter()
 const authStore = useAuthStore()
 const profileStore = useProfileStore()
 
@@ -82,17 +84,26 @@ const onOutsideClick = (e: MouseEvent) => {
 }
 onMounted(() => document.addEventListener('mousedown', onOutsideClick))
 onUnmounted(() => document.removeEventListener('mousedown', onOutsideClick))
+
+// ─── Переход в настройки профиля ──────────────────────────────────────────
+const goToProfile = () => {
+  isOpen.value = false
+  router.push('/profile')
+}
 </script>
 
 <template>
   <div ref="dropdownRef" class="relative">
-    <!-- Кнопка-триггер: аватар + имя -->
-    <button
-      class="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-gray-100 transition-colors cursor-pointer text-left w-full"
-      @click="isOpen = !isOpen"
-    >
-      <!-- Аватар с цветной точкой статуса -->
-      <div class="relative shrink-0">
+    <!-- Триггер: аватар (→ профиль) + имя/статус (→ дропдаун) -->
+    <div class="flex items-center gap-3 rounded-lg px-1 py-1 transition-colors w-full">
+
+      <!-- Аватар — клик ведёт в настройки профиля -->
+      <button
+        type="button"
+        class="relative shrink-0 hover:opacity-80 transition-opacity focus:outline-none"
+        title="Настройки профиля"
+        @click.stop="goToProfile"
+      >
         <div
           class="w-10 h-10 rounded-full bg-linear-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm select-none"
         >
@@ -103,10 +114,14 @@ onUnmounted(() => document.removeEventListener('mousedown', onOutsideClick))
           class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white transition-colors"
           :class="currentConfig.dotColor"
         />
-      </div>
+      </button>
 
-      <!-- Имя и текущий статус -->
-      <div class="hidden md:block min-w-0">
+      <!-- Имя и статус — клик открывает дропдаун -->
+      <button
+        type="button"
+        class="hidden md:block min-w-0 flex-1 text-left hover:bg-gray-100 rounded-md px-1 py-0.5 transition-colors focus:outline-none"
+        @click="isOpen = !isOpen"
+      >
         <p class="font-semibold text-gray-900 text-sm leading-tight truncate">
           {{ authStore.user?.name }}
         </p>
@@ -116,8 +131,9 @@ onUnmounted(() => document.removeEventListener('mousedown', onOutsideClick))
             <span>{{ currentStatusLabel }}</span>
           </span>
         </p>
-      </div>
-    </button>
+      </button>
+
+    </div>
 
     <!-- Выпадающее меню -->
     <Transition

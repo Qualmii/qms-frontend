@@ -228,6 +228,7 @@ export interface Session {
   ip_address: string;
   confirmed_at: string;
   expires_at: string;
+  is_current?: boolean;
 }
 
 // Search Types
