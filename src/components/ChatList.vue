@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import type { Chat, ChatUser } from '@/types/api';
 import { useAuthStore } from '@/stores/auth';
-import { getStatusEmoji } from '@/utils/statusConfig';
+import { getStatusIconPath } from '@/utils/statusConfig';
 
 interface Props {
   chats: Chat[];
@@ -115,8 +115,14 @@ const getOtherUser = (chat: Chat): ChatUser | undefined =>
         <!-- Иконка онлайн-статуса собеседника -->
         <span
           v-if="getOtherUser(chat)?.status === 'online'"
-          class="absolute -bottom-0.5 -right-0.5 w-5 h-5 flex items-center justify-center bg-white dark:bg-gray-800 rounded-full shadow-sm text-xs leading-none"
-        >{{ getStatusEmoji(getOtherUser(chat)?.online_status) }}</span>
+          class="absolute -bottom-0.5 -right-0.5 w-5 h-5 flex items-center justify-center bg-white dark:bg-gray-800 rounded-full shadow-sm"
+        >
+          <img
+            :src="getStatusIconPath(getOtherUser(chat)?.online_status)"
+            alt=""
+            class="w-3.5 h-3.5 object-contain"
+          />
+        </span>
       </div>
 
       <!-- Chat Info -->

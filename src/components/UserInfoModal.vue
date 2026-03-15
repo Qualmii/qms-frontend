@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted } from 'vue'
 import type { User } from '@/types/api'
-import { getStatusEmoji } from '@/utils/statusConfig'
+import { getStatusIconPath } from '@/utils/statusConfig'
 
 interface Props {
   user: User | null
@@ -42,9 +42,9 @@ const avatarInitials = computed(() => {
 
 const isOnline = computed(() => props.user?.status === 'online')
 
-const statusEmoji = computed(() => {
-  if (!props.user?.online_status) return ''
-  return getStatusEmoji(props.user.online_status)
+const statusIconPath = computed(() => {
+  if (!props.user?.online_status) return getStatusIconPath('online')
+  return getStatusIconPath(props.user.online_status)
 })
 
 const formatLastSeen = (timestamp: string) => {
@@ -208,7 +208,11 @@ onUnmounted(() => {
           <!-- Status -->
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
-              <span class="text-xl">{{ statusEmoji || '📡' }}</span>
+              <img
+                :src="statusIconPath"
+                alt="Status icon"
+                class="w-6 h-6 object-contain"
+              />
             </div>
             <div class="flex-1 min-w-0">
               <p class="text-xs text-gray-500 dark:text-gray-400">Статус</p>

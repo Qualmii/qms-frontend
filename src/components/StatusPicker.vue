@@ -137,7 +137,11 @@ const goToProfile = () => {
           {{ authStore.user?.name }}
         </div>
         <div class="text-xs text-gray-500 dark:text-gray-400 truncate leading-tight mt-0.5 flex items-center gap-1.5">
-          <span class="text-sm leading-none">{{ currentConfig.emoji }}</span>
+          <img
+            :src="currentConfig.iconPath"
+            alt=""
+            class="w-4 h-4 object-contain"
+          />
           <span>{{ currentStatusLabel }}</span>
         </div>
       </button>
@@ -181,8 +185,12 @@ const goToProfile = () => {
             >
               <!-- Цветная точка -->
               <span class="w-2.5 h-2.5 rounded-full shrink-0" :class="s.dotColor" />
-              <!-- Эмодзи -->
-              <span class="text-base leading-none">{{ s.emoji }}</span>
+              <!-- Иконка статуса -->
+              <img
+                :src="s.iconPath"
+                :alt="s.name"
+                class="w-5 h-5 object-contain shrink-0"
+              />
               <!-- Название -->
               <span class="flex-1 text-left">{{ s.name }}</span>
               <!-- Галочка для текущего -->

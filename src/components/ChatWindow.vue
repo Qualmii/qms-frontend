@@ -7,7 +7,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useChatStore } from '@/stores/chat'
 import { useProfileStore } from '@/stores/profile'
 import { apiClient } from '@/services/api'
-import { getStatusEmoji } from '@/utils/statusConfig'
+import { getStatusIconPath } from '@/utils/statusConfig'
 import type { Chat, Message } from '@/types/api'
 import VoiceRecorder from '@/components/VoiceRecorder.vue'
 import VoicePlayer from '@/components/VoicePlayer.vue'
@@ -221,9 +221,9 @@ const onlineStatusLabel = computed(() => {
   return 'В сети'
 })
 
-/** Эмодзи для текущего статуса собеседника */
-const onlineStatusEmoji = computed(() =>
-  getStatusEmoji(otherUser.value?.online_status)
+/** Путь к иконке для текущего статуса собеседника */
+const onlineStatusIconPath = computed(() =>
+  getStatusIconPath(otherUser.value?.online_status)
 )
 
 // Реактивное "сейчас" — обновляется каждые 30 с, чтобы "N мин. назад" не замерзало
@@ -540,7 +540,11 @@ onUnmounted(() => {
             <span v-if="chat.type === 'private'">
               <template v-if="isOnline">
                 <span class="flex items-center gap-1.5">
-                  <span class="text-sm leading-none">{{ onlineStatusEmoji }}</span>
+                  <img
+                    :src="onlineStatusIconPath"
+                    alt=""
+                    class="w-4 h-4 object-contain"
+                  />
                   <span>{{ onlineStatusLabel }}</span>
                 </span>
               </template>
