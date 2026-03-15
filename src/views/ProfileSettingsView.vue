@@ -339,10 +339,10 @@ function formatDate(iso: string): string {
     <main class="max-w-2xl mx-auto px-4 py-6 space-y-4">
 
       <!-- Карточка профиля -->
-      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+      <div class="bg-white rounded-2xl border border-gray-200">
 
         <!-- Фон-баннер -->
-        <div class="h-24 bg-linear-to-r from-blue-500 via-indigo-500 to-purple-500" />
+        <div class="h-24 bg-linear-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-t-2xl overflow-hidden" />
 
         <!-- Аватар + имя -->
         <div class="px-6 pb-6">
@@ -351,19 +351,24 @@ function formatDate(iso: string): string {
           <div ref="avatarMenuRef" class="relative -mt-12 mb-4 w-fit">
 
             <!-- Круг аватара -->
-            <div class="relative w-24 h-24 ring-4 ring-white rounded-full">
+            <div
+              class="relative w-24 h-24 ring-4 ring-white rounded-full cursor-pointer group"
+              :class="{ 'pointer-events-none': isUploadingAvatar || isDeletingAvatar }"
+              @click="!isUploadingAvatar && !isDeletingAvatar && (showAvatarMenu = !showAvatarMenu)"
+            >
               <!-- Фото -->
               <img
                 v-if="user?.avatar_url"
                 :src="user.avatar_url"
                 alt="Аватар"
-                class="w-24 h-24 rounded-full object-cover"
+                class="w-24 h-24 rounded-full object-cover transition-opacity group-hover:opacity-75"
               />
               <!-- Инициалы (нет фото) -->
               <div
                 v-else
                 class="w-24 h-24 rounded-full bg-linear-to-br from-blue-500 to-purple-500
-                       flex items-center justify-center text-white font-bold text-2xl select-none"
+                       flex items-center justify-center text-white font-bold text-2xl select-none
+                       transition-opacity group-hover:opacity-75"
               >
                 {{ avatarInitials }}
               </div>
@@ -379,26 +384,28 @@ function formatDate(iso: string): string {
                 </svg>
               </div>
 
-              <!-- Кнопка-карандаш -->
-              <button
+              <!-- Иконка при наведении -->
+              <div
                 v-if="!isUploadingAvatar && !isDeletingAvatar"
-                type="button"
-                class="absolute bottom-0 right-0 w-7 h-7 rounded-full
-                       bg-blue-600 hover:bg-blue-700 transition-colors
-                       flex items-center justify-center shadow-md"
-                @click="showAvatarMenu = !showAvatarMenu"
+                class="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/30
+                       flex items-center justify-center transition-all duration-200"
               >
-                <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg
+                  class="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
                 </svg>
-              </button>
+              </div>
             </div>
 
             <!-- Индикатор статуса -->
             <span
-              class="absolute bottom-1 right-8 w-5 h-5 rounded-full border-2 border-white"
+              class="absolute bottom-1 right-1 w-5 h-5 rounded-full border-2 border-white"
               :class="currentStatusConfig.dotColor"
             />
 
