@@ -93,6 +93,20 @@ export const useChatStore = defineStore('chat', () => {
     if (!messages.value[chatId]) {
       await fetchMessages(chatId);
     }
+
+    // Помечаем все сообщения как прочитанные на сервере
+    if (chat.unread_count && chat.unread_count > 0) {
+      const oldCount = chat.unread_count;
+      chat.unread_count = 0; // Сбрасываем счётчик локально для быстрого UI
+
+      try {
+        await apiClient.markChatAsRead(chatId);
+      } catch (err) {
+        console.error('Failed to mark chat as read:', err);
+        // Восстанавливаем счётчик при ошибке
+        chat.unread_count = oldCount;
+      }
+    }
   };
 
   /**
@@ -152,7 +166,22 @@ export const useChatStore = defineStore('chat', () => {
       messages.value[chatId]!.push(fullMessage);
 
       const chat = chats.value.find(c => c.id === chatId);
-      if (chat) chat.last_message = fullMessage;
+      if (chat) {
+        chat.last_message = fullMessage;
+
+        // Сбрасываем счётчик при отправке сообщения
+        const hadUnread = chat.unread_count && chat.unread_count > 0;
+        if (hadUnread) {
+          chat.unread_count = 0;
+
+          // Помечаем на сервере как прочитанные
+          try {
+            await apiClient.markChatAsRead(chatId);
+          } catch (err) {
+            console.error('Failed to mark chat as read:', err);
+          }
+        }
+      }
 
       return fullMessage;
     } catch (err: unknown) {
@@ -207,7 +236,9 @@ export const useChatStore = defineStore('chat', () => {
     messages.value[chatId]!.push(fullMessage);
 
     const chat = chats.value.find(c => c.id === chatId);
-    if (chat) chat.last_message = fullMessage;
+    if (chat) {
+      chat.last_message = fullMessage;
+    }
 
     return fullMessage;
   };
@@ -291,12 +322,13 @@ export const useChatStore = defineStore('chat', () => {
       }
     }
 
-    // Update last message in chat and unread count
+    // Update last message in chat
     const chat = chats.value.find((c) => c.id === message.chat_id);
     if (chat) {
       chat.last_message = message;
 
-      // Увеличиваем счётчик непрочитанных, если чат не открыт и сообщение не от текущего пользователя
+      // Увеличиваем счётчик непрочитанных только для оптимистичного обновления UI
+      // Реальный счётчик будет обновлён при следующей загрузке чатов с сервера
       if (currentChat.value?.id !== message.chat_id) {
         const authStore = useAuthStore();
 

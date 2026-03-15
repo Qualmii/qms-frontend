@@ -6,6 +6,7 @@ import 'emoji-mart-vue-fast/css/emoji-mart.css'
 import { useAuthStore } from '@/stores/auth'
 import { useChatStore } from '@/stores/chat'
 import { useProfileStore } from '@/stores/profile'
+import { apiClient } from '@/services/api'
 import { getStatusEmoji } from '@/utils/statusConfig'
 import type { Chat, Message } from '@/types/api'
 import VoiceRecorder from '@/components/VoiceRecorder.vue'
@@ -243,8 +244,40 @@ const scrollToBottom = async () => {
   }
 }
 
-watch(messages, () => scrollToBottom(), { deep: true })
-onMounted(() => scrollToBottom())
+// Отложенная пометка как прочитанное (debounce для избежания лишних вызовов)
+let markAsReadTimeout: ReturnType<typeof setTimeout> | null = null
+const markMessagesAsRead = async () => {
+  if (markAsReadTimeout) clearTimeout(markAsReadTimeout)
+
+  markAsReadTimeout = setTimeout(async () => {
+    if (props.chat.unread_count && props.chat.unread_count > 0) {
+      const oldCount = props.chat.unread_count
+      props.chat.unread_count = 0
+
+      try {
+        await apiClient.markChatAsRead(props.chat.id)
+      } catch (err) {
+        console.error('Failed to mark chat as read:', err)
+        props.chat.unread_count = oldCount
+      }
+    }
+  }, 300) // 300ms задержка
+}
+
+// Следим за изменениями сообщений и автоматически помечаем как прочитанные
+watch(messages, async () => {
+  await scrollToBottom()
+  // Помечаем сообщения как прочитанные если есть непрочитанные
+  if (messages.value.length > 0) {
+    markMessagesAsRead()
+  }
+}, { deep: true })
+
+onMounted(() => {
+  scrollToBottom()
+  // При монтировании также помечаем как прочитанные если есть непрочитанные
+  markMessagesAsRead()
+})
 
 const formatTime = (dateStr: string) => {
   return new Date(dateStr).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
@@ -330,6 +363,8 @@ const handleVoiceCancel = () => {
 // ─── /Voice recorder ──────────────────────────────────────────────────────────
 
 onUnmounted(() => {
+  if (clockTimer) clearInterval(clockTimer)
+  if (markAsReadTimeout) clearTimeout(markAsReadTimeout)
   document.removeEventListener('mousedown', onClickOutsidePicker)
   document.removeEventListener('keydown', onKeydownLightbox)
   pendingFiles.value.forEach(pf => { if (pf.previewUrl) URL.revokeObjectURL(pf.previewUrl) })

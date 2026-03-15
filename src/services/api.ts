@@ -217,6 +217,10 @@ class ApiClient {
     return this.client.post(`/chats/${chatId}/mute`);
   }
 
+  async markChatAsRead(chatId: number): Promise<AxiosResponse<{ status: string; marked_count: number }>> {
+    return this.client.post(`/chats/${chatId}/mark-as-read`);
+  }
+
   async getOrCreatePrivateChat(userId: string): Promise<AxiosResponse<Chat>> {
     return this.client.post(`/chats/get-or-create-private/${userId}`);
   }
