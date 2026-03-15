@@ -38,6 +38,8 @@ export const useAuthStore = defineStore('auth', () => {
 
       if (response.data.access_token && response.data.user) {
         setAuthData(response.data.access_token, response.data.user);
+        // Подтягиваем полный профиль — в ответе /login может не быть всех полей
+        await refreshUser();
         return { success: true };
       }
 
@@ -57,6 +59,8 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await apiClient.confirmLogin({ token: confirmationToken });
       setAuthData(response.data.access_token, response.data.user);
+      // Подтягиваем полный профиль — в ответе /login/confirm может не быть всех полей
+      await refreshUser();
       return { success: true };
     } catch (err: unknown) {
       error.value = err instanceof Error ? err.message : 'Confirmation failed';
