@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import type { User } from '@/types/api'
 import { getStatusEmoji } from '@/utils/statusConfig'
 
@@ -73,6 +73,44 @@ const handleBackdropClick = (e: MouseEvent) => {
     handleClose()
   }
 }
+
+// Лайтбокс для аватара
+const showAvatarLightbox = ref(false)
+
+const openAvatarLightbox = () => {
+  if (avatarUrl.value) {
+    showAvatarLightbox.value = true
+  }
+}
+
+const closeAvatarLightbox = () => {
+  showAvatarLightbox.value = false
+}
+
+const handleLightboxBackdrop = (e: MouseEvent) => {
+  if (e.target === e.currentTarget) {
+    closeAvatarLightbox()
+  }
+}
+
+// Закрытие лайтбокса по Escape
+const onKeydownEscape = (e: KeyboardEvent) => {
+  if (e.key === 'Escape') {
+    closeAvatarLightbox()
+  }
+}
+
+watch(showAvatarLightbox, (val) => {
+  if (val) {
+    document.addEventListener('keydown', onKeydownEscape)
+  } else {
+    document.removeEventListener('keydown', onKeydownEscape)
+  }
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', onKeydownEscape)
+})
 </script>
 
 <template>
@@ -97,7 +135,11 @@ const handleBackdropClick = (e: MouseEvent) => {
           <!-- Avatar -->
           <div class="flex justify-center mb-4">
             <div class="relative">
-              <div class="w-24 h-24 rounded-full overflow-hidden ring-4 ring-white/30 shadow-lg">
+              <div
+                class="w-24 h-24 rounded-full overflow-hidden ring-4 ring-white/30 shadow-lg transition-all"
+                :class="avatarUrl ? 'cursor-pointer hover:ring-white/50 hover:scale-105' : ''"
+                @click="openAvatarLightbox"
+              >
                 <img
                   v-if="avatarUrl"
                   :src="avatarUrl"
@@ -110,6 +152,16 @@ const handleBackdropClick = (e: MouseEvent) => {
                 >
                   {{ avatarInitials }}
                 </div>
+              </div>
+              <!-- Иконка увеличения при наведении -->
+              <div
+                v-if="avatarUrl"
+                class="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer bg-black/20 rounded-full"
+                @click="openAvatarLightbox"
+              >
+                <svg class="w-8 h-8 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
+                </svg>
               </div>
               <!-- Online indicator -->
               <span
@@ -201,6 +253,57 @@ const handleBackdropClick = (e: MouseEvent) => {
           </button>
         </div>
       </div>
+    </div>
+  </Transition>
+
+  <!-- Lightbox для аватара -->
+  <Transition name="modal">
+    <div
+      v-if="showAvatarLightbox && avatarUrl"
+      class="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-sm"
+      @click="handleLightboxBackdrop"
+    >
+      <!-- Close button -->
+      <button
+        @click="closeAvatarLightbox"
+        class="absolute top-4 right-4 w-12 h-12 flex items-center justify-center text-white bg-white/10 hover:bg-white/20 rounded-full transition-colors z-10"
+        title="Закрыть (Esc)"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+
+      <!-- Avatar Image -->
+      <img
+        :src="avatarUrl"
+        :alt="displayName"
+        class="max-w-[90vw] max-h-[90vh] object-contain rounded-2xl shadow-2xl"
+        @click.stop
+      />
+
+      <!-- User info overlay -->
+      <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3 px-6 py-3 bg-white/10 backdrop-blur-md rounded-full">
+        <span class="text-white font-semibold text-lg">{{ displayName }}</span>
+        <span
+          class="w-3 h-3 rounded-full"
+          :class="isOnline ? 'bg-green-400' : 'bg-gray-400'"
+        />
+      </div>
+
+      <!-- Open in new tab -->
+      <a
+        :href="avatarUrl"
+        target="_blank"
+        rel="noopener"
+        class="absolute bottom-8 right-8 flex items-center gap-2 px-4 py-2 text-sm text-white bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+        </svg>
+        Открыть оригинал
+      </a>
     </div>
   </Transition>
 </template>
