@@ -125,6 +125,10 @@ class ApiClient {
     return this.client.post('/users/username', { username });
   }
 
+  async deleteUsername(): Promise<AxiosResponse<ApiResponse>> {
+    return this.client.delete('/users/username');
+  }
+
   async searchUsers(params: SearchUserRequest): Promise<AxiosResponse<SearchUserResponse>> {
     return this.client.get('/users/search', { params });
   }

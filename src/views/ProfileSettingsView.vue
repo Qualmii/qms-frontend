@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useProfileStore } from '@/stores/profile'
 import { STATUS_CONFIG } from '@/utils/statusConfig'
 import type { Session } from '@/types/api'
 
@@ -9,11 +10,11 @@ type SessionWithCurrent = Session & { is_current?: boolean }
 
 const router = useRouter()
 const authStore = useAuthStore()
+const profileStore = useProfileStore()
 
 const user = computed(() => authStore.user)
 
-const usernameInput = ref(user.value?.username ?? '')
-
+// ─── Аватар / инициалы ────────────────────────────────────────────────────
 const avatarInitials = computed(() => {
   const name = user.value?.name ?? ''
   return name.substring(0, 2).toUpperCase()
@@ -22,6 +23,76 @@ const avatarInitials = computed(() => {
 const currentStatusConfig = computed(() =>
   STATUS_CONFIG[user.value?.online_status ?? 'online'] ?? STATUS_CONFIG['online']!
 )
+
+// ─── Ник ──────────────────────────────────────────────────────────────────
+const usernameInput    = ref(user.value?.username ?? '')
+const isSavingUsername = ref(false)
+const isDeletingUsername = ref(false)
+const usernameApiError = ref<string | null>(null)
+const usernameSuccess  = ref(false)
+
+/** Валидация поля ника */
+const usernameValidationError = computed(() => {
+  const val = usernameInput.value.trim()
+  if (!val) return null
+  if (val.length < 3)  return 'Минимум 3 символа'
+  if (val.length > 20) return 'Максимум 20 символов'
+  if (!/^[a-zA-Z0-9_-]+$/.test(val)) return 'Только латиница, цифры, _ и -'
+  return null
+})
+
+const canSaveUsername = computed(() => {
+  const val = usernameInput.value.trim()
+  if (!val) return false
+  if (usernameValidationError.value) return false
+  if (val === user.value?.username) return false
+  return true
+})
+
+const saveUsername = async () => {
+  if (!canSaveUsername.value || isSavingUsername.value) return
+  isSavingUsername.value = true
+  usernameApiError.value = null
+  usernameSuccess.value = false
+  try {
+    await profileStore.setUsername(usernameInput.value.trim())
+    if (authStore.user) {
+      authStore.user.username = usernameInput.value.trim()
+      localStorage.setItem('user', JSON.stringify(authStore.user))
+    }
+    usernameSuccess.value = true
+    setTimeout(() => { usernameSuccess.value = false }, 3000)
+  } catch (err: any) {
+    usernameApiError.value = err?.response?.data?.message
+      ?? err?.response?.data?.error
+      ?? 'Не удалось сохранить ник'
+  } finally {
+    isSavingUsername.value = false
+  }
+}
+
+const deleteUsername = async () => {
+  if (isDeletingUsername.value) return
+  isDeletingUsername.value = true
+  usernameApiError.value = null
+  usernameSuccess.value = false
+  try {
+    await profileStore.deleteUsername()
+    if (authStore.user) {
+      authStore.user.username = undefined
+      localStorage.setItem('user', JSON.stringify(authStore.user))
+    }
+    usernameInput.value = ''
+    usernameSuccess.value = true
+    setTimeout(() => { usernameSuccess.value = false }, 3000)
+  } catch (err: any) {
+    usernameApiError.value = err?.response?.data?.message
+      ?? err?.response?.data?.error
+      ?? 'Не удалось удалить ник'
+  } finally {
+    isDeletingUsername.value = false
+  }
+}
 
 // ─── Сессии (mock-данные для вёрстки) ─────────────────────────────────────
 const sessions = ref<SessionWithCurrent[]>([
@@ -196,9 +267,10 @@ function formatDate(iso: string): string {
         <div class="px-4 py-4 space-y-3">
           <div>
             <label class="block text-xs text-gray-400 mb-1.5">Ник</label>
-            <div class="flex gap-2">
+            <div class="flex">
               <!-- Префикс @ -->
-              <div class="flex items-center px-3 bg-gray-50 border border-gray-200 border-r-0 rounded-l-lg text-sm text-gray-400 select-none">
+              <div class="flex items-center px-3 bg-gray-50 border border-gray-200 border-r-0 rounded-l-lg
+                          text-sm text-gray-400 select-none shrink-0">
                 @
               </div>
               <input
@@ -206,13 +278,45 @@ function formatDate(iso: string): string {
                 type="text"
                 maxlength="20"
                 placeholder="username"
-                class="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-r-lg
-                       focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent
-                       placeholder:text-gray-300"
+                :class="[
+                  'flex-1 px-3 py-2 text-sm border rounded-r-lg',
+                  'focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-300',
+                  usernameValidationError
+                    ? 'border-red-300 focus:ring-red-400'
+                    : 'border-gray-200 focus:ring-blue-400'
+                ]"
+                @keydown.enter="saveUsername"
               />
             </div>
-            <p class="text-xs text-gray-400 mt-1.5">
-              От 3 до 20 символов: латиница, цифры, <span class="font-mono">_</span> и <span class="font-mono">-</span>
+
+            <!-- Ошибка валидации -->
+            <p v-if="usernameValidationError" class="text-xs text-red-500 mt-1.5 flex items-center gap-1">
+              <svg class="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+              </svg>
+              {{ usernameValidationError }}
+            </p>
+
+            <!-- Ошибка API -->
+            <p v-else-if="usernameApiError" class="text-xs text-red-500 mt-1.5 flex items-center gap-1">
+              <svg class="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+              </svg>
+              {{ usernameApiError }}
+            </p>
+
+            <!-- Успех -->
+            <p v-else-if="usernameSuccess" class="text-xs text-green-600 mt-1.5 flex items-center gap-1">
+              <svg class="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+              </svg>
+              Сохранено
+            </p>
+
+            <!-- Подсказка -->
+            <p v-else class="text-xs text-gray-400 mt-1.5">
+              От 3 до 20 символов: латиница, цифры,
+              <span class="font-mono">_</span> и <span class="font-mono">-</span>
             </p>
           </div>
 
@@ -220,19 +324,39 @@ function formatDate(iso: string): string {
           <div class="flex gap-2 pt-1">
             <button
               type="button"
-              class="flex-1 py-2 px-4 bg-blue-600 text-white text-sm font-medium rounded-lg
-                     hover:bg-blue-700 transition-colors disabled:opacity-40"
-              disabled
+              class="flex-1 py-2 px-4 text-sm font-medium rounded-lg transition-colors
+                     flex items-center justify-center gap-2
+                     disabled:opacity-40 disabled:cursor-not-allowed"
+              :class="canSaveUsername
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-gray-100 text-gray-400 cursor-not-allowed'"
+              :disabled="!canSaveUsername || isSavingUsername"
+              @click="saveUsername"
             >
-              Сохранить
+              <svg v-if="isSavingUsername" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+              </svg>
+              {{ isSavingUsername ? 'Сохраняем…' : 'Сохранить' }}
             </button>
+
             <button
               v-if="user?.username"
               type="button"
-              class="py-2 px-4 text-red-600 text-sm font-medium rounded-lg border border-red-200
-                     hover:bg-red-50 transition-colors"
+              class="py-2 px-4 text-sm font-medium rounded-lg border transition-colors
+                     flex items-center justify-center gap-2
+                     disabled:opacity-40 disabled:cursor-not-allowed"
+              :class="isDeletingUsername
+                ? 'border-gray-200 text-gray-400'
+                : 'border-red-200 text-red-600 hover:bg-red-50'"
+              :disabled="isDeletingUsername"
+              @click="deleteUsername"
             >
-              Удалить
+              <svg v-if="isDeletingUsername" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+              </svg>
+              {{ isDeletingUsername ? '…' : 'Удалить' }}
             </button>
           </div>
         </div>

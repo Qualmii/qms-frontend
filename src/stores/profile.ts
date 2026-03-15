@@ -58,6 +58,23 @@ export const useProfileStore = defineStore('profile', () => {
     }
   };
 
+  const deleteUsername = async () => {
+    isLoading.value = true;
+    error.value = null;
+
+    try {
+      await apiClient.deleteUsername();
+      if (profile.value) {
+        profile.value.username = undefined;
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Failed to delete username';
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
   const setStatus = async (status: string, customMessage?: string) => {
     isLoading.value = true;
     error.value = null;
@@ -137,6 +154,7 @@ export const useProfileStore = defineStore('profile', () => {
     // Actions
     fetchProfile,
     setUsername,
+    deleteUsername,
     setStatus,
     fetchAvailableStatuses,
     fetchLanguages,
