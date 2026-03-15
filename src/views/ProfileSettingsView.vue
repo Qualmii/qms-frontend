@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useProfileStore } from '@/stores/profile'
@@ -14,7 +14,7 @@ const profileStore = useProfileStore()
 
 const user = computed(() => authStore.user)
 
-// ─── Аватар / инициалы ────────────────────────────────────────────────────
+// ─── Аватар ───────────────────────────────────────────────────────────────
 const avatarInitials = computed(() => {
   const name = user.value?.name ?? ''
   return name.substring(0, 2).toUpperCase()
@@ -23,6 +23,62 @@ const avatarInitials = computed(() => {
 const currentStatusConfig = computed(() =>
   STATUS_CONFIG[user.value?.online_status ?? 'online'] ?? STATUS_CONFIG['online']!
 )
+
+const showAvatarMenu   = ref(false)
+const avatarMenuRef    = ref<HTMLElement | null>(null)
+const galleryInputRef  = ref<HTMLInputElement | null>(null)
+const cameraInputRef   = ref<HTMLInputElement | null>(null)
+const isUploadingAvatar = ref(false)
+const isDeletingAvatar  = ref(false)
+const avatarError       = ref<string | null>(null)
+
+const onAvatarOutsideClick = (e: MouseEvent) => {
+  if (avatarMenuRef.value && !avatarMenuRef.value.contains(e.target as Node)) {
+    showAvatarMenu.value = false
+  }
+}
+onMounted(() => document.addEventListener('mousedown', onAvatarOutsideClick))
+onUnmounted(() => document.removeEventListener('mousedown', onAvatarOutsideClick))
+
+const handleAvatarFile = async (e: Event) => {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  ;(e.target as HTMLInputElement).value = ''   // сбросить input для повторного выбора
+
+  isUploadingAvatar.value = true
+  avatarError.value = null
+  showAvatarMenu.value = false
+  try {
+    const res = await apiClient.uploadAvatar(file)
+    if (authStore.user) {
+      authStore.user.avatar_url = res.data.avatar_url
+      localStorage.setItem('user', JSON.stringify(authStore.user))
+    }
+  } catch {
+    avatarError.value = 'Не удалось загрузить фото'
+    setTimeout(() => { avatarError.value = null }, 3000)
+  } finally {
+    isUploadingAvatar.value = false
+  }
+}
+
+const removeAvatar = async () => {
+  isDeletingAvatar.value = true
+  avatarError.value = null
+  showAvatarMenu.value = false
+  try {
+    await apiClient.deleteAvatar()
+    if (authStore.user) {
+      authStore.user.avatar_url = null
+      localStorage.setItem('user', JSON.stringify(authStore.user))
+    }
+  } catch {
+    avatarError.value = 'Не удалось удалить фото'
+    setTimeout(() => { avatarError.value = null }, 3000)
+  } finally {
+    isDeletingAvatar.value = false
+  }
+}
 
 // ─── Ник ──────────────────────────────────────────────────────────────────
 const usernameInput    = ref(user.value?.username ?? '')
@@ -291,30 +347,149 @@ function formatDate(iso: string): string {
         <!-- Аватар + имя -->
         <div class="px-6 pb-6">
 
-          <!-- Аватар (смещён поверх баннера) -->
-          <div class="relative -mt-12 mb-4 w-fit">
-            <div class="w-24 h-24 rounded-full bg-linear-to-br from-blue-500 to-purple-500
-                        flex items-center justify-center
-                        text-white font-bold text-2xl select-none
-                        ring-4 ring-white">
-              {{ avatarInitials }}
+          <!-- Аватар с кнопкой смены -->
+          <div ref="avatarMenuRef" class="relative -mt-12 mb-4 w-fit">
+
+            <!-- Круг аватара -->
+            <div class="relative w-24 h-24 ring-4 ring-white rounded-full">
+              <!-- Фото -->
+              <img
+                v-if="user?.avatar_url"
+                :src="user.avatar_url"
+                alt="Аватар"
+                class="w-24 h-24 rounded-full object-cover"
+              />
+              <!-- Инициалы (нет фото) -->
+              <div
+                v-else
+                class="w-24 h-24 rounded-full bg-linear-to-br from-blue-500 to-purple-500
+                       flex items-center justify-center text-white font-bold text-2xl select-none"
+              >
+                {{ avatarInitials }}
+              </div>
+
+              <!-- Оверлей загрузки -->
+              <div
+                v-if="isUploadingAvatar || isDeletingAvatar"
+                class="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center"
+              >
+                <svg class="w-6 h-6 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                </svg>
+              </div>
+
+              <!-- Кнопка-карандаш -->
+              <button
+                v-if="!isUploadingAvatar && !isDeletingAvatar"
+                type="button"
+                class="absolute bottom-0 right-0 w-7 h-7 rounded-full
+                       bg-blue-600 hover:bg-blue-700 transition-colors
+                       flex items-center justify-center shadow-md"
+                @click="showAvatarMenu = !showAvatarMenu"
+              >
+                <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+              </button>
             </div>
+
             <!-- Индикатор статуса -->
             <span
-              class="absolute bottom-1 right-1 w-5 h-5 rounded-full border-2 border-white"
+              class="absolute bottom-1 right-8 w-5 h-5 rounded-full border-2 border-white"
               :class="currentStatusConfig.dotColor"
+            />
+
+            <!-- Выпадающее меню аватара -->
+            <Transition
+              enter-active-class="transition duration-150 ease-out"
+              enter-from-class="opacity-0 scale-95 -translate-y-1"
+              enter-to-class="opacity-100 scale-100 translate-y-0"
+              leave-active-class="transition duration-100 ease-in"
+              leave-from-class="opacity-100 scale-100 translate-y-0"
+              leave-to-class="opacity-0 scale-95 -translate-y-1"
+            >
+              <div
+                v-if="showAvatarMenu"
+                class="absolute left-0 top-full mt-2 z-20 w-52
+                       bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden"
+              >
+                <!-- Выбрать из галереи -->
+                <button
+                  type="button"
+                  class="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  @click="galleryInputRef?.click()"
+                >
+                  <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                  Выбрать из галереи
+                </button>
+
+                <!-- Сфотографировать -->
+                <button
+                  type="button"
+                  class="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-t border-gray-100"
+                  @click="cameraInputRef?.click()"
+                >
+                  <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  </svg>
+                  Сфотографировать
+                </button>
+
+                <!-- Удалить фото -->
+                <button
+                  v-if="user?.avatar_url"
+                  type="button"
+                  class="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors border-t border-gray-100"
+                  @click="removeAvatar"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                  </svg>
+                  Удалить фото
+                </button>
+              </div>
+            </Transition>
+
+            <!-- Скрытые inputs -->
+            <input
+              ref="galleryInputRef"
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              class="hidden"
+              @change="handleAvatarFile"
+            />
+            <input
+              ref="cameraInputRef"
+              type="file"
+              accept="image/*"
+              capture="user"
+              class="hidden"
+              @change="handleAvatarFile"
             />
           </div>
 
+          <!-- Ошибка аватара -->
+          <p v-if="avatarError" class="text-xs text-red-500 mb-2 flex items-center gap-1">
+            <svg class="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+            </svg>
+            {{ avatarError }}
+          </p>
+
           <!-- Имя -->
-          <h2 class="text-xl font-bold text-gray-900 leading-tight">
-            {{ user?.name }}
-          </h2>
+          <h2 class="text-xl font-bold text-gray-900 leading-tight">{{ user?.name }}</h2>
 
           <!-- Ник, если есть -->
-          <p v-if="user?.username" class="text-sm text-gray-500 mt-0.5">
-            @{{ user.username }}
-          </p>
+          <p v-if="user?.username" class="text-sm text-gray-500 mt-0.5">@{{ user.username }}</p>
 
         </div>
       </div>

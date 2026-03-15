@@ -15,6 +15,7 @@ export interface User {
   uin: string;
   username?: string;
   locale?: string;
+  avatar_url?: string | null;
   /** online / offline */
   status?: 'online' | 'offline';
   online_status?: string;

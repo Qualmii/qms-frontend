@@ -17,7 +17,7 @@ const dropdownRef = ref<HTMLElement | null>(null)
 // ─── Конфиг статусов вынесен в @/utils/statusConfig.ts ────────────────────
 
 const currentKey = computed(() => authStore.user?.online_status ?? 'online')
-const currentConfig = computed(() => STATUS_CONFIG[currentKey.value] ?? STATUS_CONFIG.online)
+const currentConfig = computed(() => STATUS_CONFIG[currentKey.value] ?? STATUS_CONFIG['online']!)
 const currentName = computed(
   () => profileStore.availableStatuses[currentKey.value] ?? 'Онлайн'
 )
@@ -104,16 +104,27 @@ const goToProfile = () => {
         title="Настройки профиля"
         @click.stop="goToProfile"
       >
-        <div
-          class="w-10 h-10 rounded-full bg-linear-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm select-none"
-        >
-          {{ authStore.user?.name?.substring(0, 2).toUpperCase() }}
+        <div class="relative w-10 h-10">
+          <!-- Фото -->
+          <img
+            v-if="authStore.user?.avatar_url"
+            :src="authStore.user.avatar_url"
+            alt="Аватар"
+            class="w-10 h-10 rounded-full object-cover"
+          />
+          <!-- Инициалы (нет фото) -->
+          <div
+            v-else
+            class="w-10 h-10 rounded-full bg-linear-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm select-none"
+          >
+            {{ authStore.user?.name?.substring(0, 2).toUpperCase() }}
+          </div>
+          <!-- Точка статуса -->
+          <span
+            class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white transition-colors"
+            :class="currentConfig.dotColor"
+          />
         </div>
-        <!-- Точка статуса -->
-        <span
-          class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white transition-colors"
-          :class="currentConfig.dotColor"
-        />
       </button>
 
       <!-- Имя и статус — клик открывает дропдаун -->
@@ -122,15 +133,13 @@ const goToProfile = () => {
         class="hidden md:block min-w-0 flex-1 text-left hover:bg-gray-100 rounded-md px-1 py-0.5 transition-colors focus:outline-none"
         @click="isOpen = !isOpen"
       >
-        <p class="font-semibold text-gray-900 text-sm leading-tight truncate">
+        <div class="font-semibold text-gray-900 text-sm leading-tight truncate">
           {{ authStore.user?.name }}
-        </p>
-        <p class="text-xs text-gray-500 truncate leading-tight mt-0.5">
-          <span class="flex items-center gap-1.5">
-            <span class="text-sm leading-none">{{ currentConfig.emoji }}</span>
-            <span>{{ currentStatusLabel }}</span>
-          </span>
-        </p>
+        </div>
+        <div class="text-xs text-gray-500 truncate leading-tight mt-0.5 flex items-center gap-1.5">
+          <span class="text-sm leading-none">{{ currentConfig.emoji }}</span>
+          <span>{{ currentStatusLabel }}</span>
+        </div>
       </button>
 
     </div>

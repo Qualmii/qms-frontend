@@ -12,8 +12,8 @@ export const useProfileStore = defineStore('profile', () => {
   const error = ref<string | null>(null);
 
   // Getters
-  const currentStatus = computed(() => profile.value?.status?.status);
-  const customStatus = computed(() => profile.value?.status?.custom_message);
+  const currentStatus = computed(() => profile.value?.online_status);
+  const customStatus = computed(() => profile.value?.custom_status);
   const availableLanguages = computed(() => {
     if (!languagesData.value) return [];
     return languagesData.value.supported_locales.map(code => ({

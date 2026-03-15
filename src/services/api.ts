@@ -129,6 +129,18 @@ class ApiClient {
     return this.client.delete('/users/username');
   }
 
+  async uploadAvatar(file: File): Promise<AxiosResponse<{ status: string; avatar_url: string }>> {
+    const formData = new FormData()
+    formData.append('avatar', file)
+    return this.client.post('/users/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  }
+
+  async deleteAvatar(): Promise<AxiosResponse<ApiResponse>> {
+    return this.client.delete('/users/avatar')
+  }
+
   async searchUsers(params: SearchUserRequest): Promise<AxiosResponse<SearchUserResponse>> {
     return this.client.get('/users/search', { params });
   }
