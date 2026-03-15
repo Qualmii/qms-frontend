@@ -372,10 +372,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-col h-full bg-[#f0f2f5]">
+  <div class="flex flex-col h-full bg-[#f0f2f5] dark:bg-gray-900">
 
     <!-- Header -->
-    <div class="flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100 shadow-sm z-10">
+    <div class="flex items-center gap-3 px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 shadow-sm z-10">
       <div class="relative flex-shrink-0">
         <!-- Фото или инициалы -->
         <div class="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white shadow-sm">
@@ -401,8 +401,8 @@ onUnmounted(() => {
       </div>
 
       <div class="flex-1 min-w-0">
-        <h3 class="font-semibold text-gray-900 truncate leading-tight">{{ chatName }}</h3>
-        <p class="text-xs leading-tight mt-0.5" :class="isOnline ? 'text-green-500' : 'text-gray-400'">
+        <h3 class="font-semibold text-gray-900 dark:text-white truncate leading-tight">{{ chatName }}</h3>
+        <p class="text-xs leading-tight mt-0.5" :class="isOnline ? 'text-green-500 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'">
           <span v-if="chat.type === 'private'">
             <template v-if="isOnline">
               <span class="flex items-center gap-1.5">
@@ -580,10 +580,10 @@ onUnmounted(() => {
     </div>
 
     <!-- Input area -->
-    <div class="bg-white border-t border-gray-100 px-4 py-3 shadow-[0_-1px_4px_rgba(0,0,0,0.04)]">
+    <div class="bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 px-4 py-3 shadow-[0_-1px_4px_rgba(0,0,0,0.04)] dark:shadow-[0_-1px_4px_rgba(0,0,0,0.2)]">
 
       <!-- Ошибка отправки -->
-      <div v-if="sendError" class="flex items-center gap-2 mb-2 px-1 text-red-500 text-xs">
+      <div v-if="sendError" class="flex items-center gap-2 mb-2 px-1 text-red-500 dark:text-red-400 text-xs">
         <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -639,8 +639,8 @@ onUnmounted(() => {
                 @click="toggleEmojiPicker"
                 class="p-2 rounded-full transition-colors"
                 :class="showEmojiPicker
-                  ? 'text-yellow-500 bg-yellow-50'
-                  : 'text-gray-400 hover:text-yellow-500 hover:bg-gray-100'"
+                  ? 'text-yellow-500 bg-yellow-50 dark:bg-yellow-900/30'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-yellow-500 hover:bg-gray-100 dark:hover:bg-gray-700'"
                 title="Эмодзи" type="button"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -670,7 +670,7 @@ onUnmounted(() => {
             <!-- Attach button -->
             <button
               @click="handleAttach"
-              class="p-2 text-gray-400 hover:text-blue-500 hover:bg-gray-100 rounded-full transition-colors"
+              class="p-2 text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
               title="Прикрепить файл" type="button"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -691,7 +691,7 @@ onUnmounted(() => {
               placeholder="Написать сообщение..."
               rows="1"
               :disabled="isSending"
-              class="w-full resize-none rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-shadow max-h-36 overflow-y-auto disabled:opacity-60"
+              class="w-full resize-none rounded-2xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 px-4 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500 focus:border-transparent transition-shadow max-h-36 overflow-y-auto disabled:opacity-60"
               style="line-height: 1.5;"
             />
           </div>
@@ -701,7 +701,7 @@ onUnmounted(() => {
             <button
               v-if="!messageText.trim() && pendingFiles.length === 0 && !isSending"
               @click="handleVoice"
-              class="p-2.5 text-gray-400 hover:text-red-500 hover:bg-gray-100 rounded-full transition-colors"
+              class="p-2.5 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
               title="Голосовое сообщение" type="button"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -714,7 +714,7 @@ onUnmounted(() => {
               v-if="messageText.trim() || pendingFiles.length > 0 || isSending"
               @click="handleSend"
               :disabled="isSending || (!messageText.trim() && pendingFiles.length === 0)"
-              class="p-2.5 bg-blue-500 text-white rounded-full hover:bg-blue-600 active:scale-95 transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
+              class="p-2.5 bg-blue-500 dark:bg-blue-600 text-white rounded-full hover:bg-blue-600 dark:hover:bg-blue-700 active:scale-95 transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
               title="Отправить" type="button"
             >
               <svg v-if="isSending" class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">

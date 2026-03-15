@@ -90,24 +90,24 @@ const toggleSidebar = () => {
 </script>
 
 <template>
-  <div class="h-screen flex overflow-hidden bg-gray-100">
+  <div class="h-screen flex overflow-hidden bg-gray-100 dark:bg-gray-900">
     <!-- Sidebar -->
     <div
-      class="flex flex-col bg-white border-r border-gray-200 transition-all duration-300"
+      class="flex flex-col bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300"
       :class="[
         isSidebarOpen ? 'w-full md:w-80 lg:w-96' : 'w-0 md:w-0',
         'md:relative absolute inset-y-0 left-0 z-30'
       ]"
     >
       <!-- Sidebar Header -->
-      <div class="flex items-center justify-between px-4 py-3 border-b bg-white gap-2">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 gap-2">
         <!-- Выбор статуса в стиле ICQ -->
         <StatusPicker class="flex-1 min-w-0" />
 
         <div class="flex items-center gap-1 shrink-0">
           <button
             @click="showUserSearch = true"
-            class="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            class="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
             title="Поиск контактов"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -117,7 +117,7 @@ const toggleSidebar = () => {
 
           <button
             @click="handleLogout"
-            class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            class="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
             title="Выйти"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -128,7 +128,7 @@ const toggleSidebar = () => {
           <!-- Close sidebar on mobile -->
           <button
             @click="toggleSidebar"
-            class="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+            class="md:hidden p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -152,32 +152,32 @@ const toggleSidebar = () => {
     <!-- Main Content -->
     <div class="flex-1 flex flex-col">
       <!-- Mobile Header -->
-      <div class="md:hidden flex items-center gap-3 px-4 py-3 bg-white border-b">
+      <div class="md:hidden flex items-center gap-3 px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <button
           @click="toggleSidebar"
-          class="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+          class="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
         >
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        <h1 class="text-lg font-semibold text-gray-900">QMS</h1>
+        <h1 class="text-lg font-semibold text-gray-900 dark:text-white">QMS</h1>
       </div>
 
       <!-- Empty State / Chat Window -->
       <div class="flex-1 flex flex-col overflow-hidden">
-        <div v-if="!currentChatData" class="flex-1 flex items-center justify-center bg-gray-50 px-4">
+        <div v-if="!currentChatData" class="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
           <div class="text-center">
-            <div class="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
-              <svg class="w-12 h-12 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 flex items-center justify-center">
+              <svg class="w-12 h-12 text-blue-500 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
             </div>
-            <h2 class="text-2xl font-semibold text-gray-900 mb-2">Добро пожаловать в QMS!</h2>
-            <p class="text-gray-600 mb-6">Выберите чат из списка или начните новый диалог</p>
+            <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-2">Добро пожаловать в QMS!</h2>
+            <p class="text-gray-600 dark:text-gray-400 mb-6">Выберите чат из списка или начните новый диалог</p>
             <button
               @click="showUserSearch = true"
-              class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              class="px-6 py-3 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
             >
               Найти контакты
             </button>

@@ -424,21 +424,21 @@ function formatDate(iso: string): string {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-100">
+  <div class="min-h-screen bg-gray-100 dark:bg-gray-900">
 
     <!-- Шапка -->
-    <header class="sticky top-0 z-10 bg-white border-b border-gray-200">
+    <header class="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
       <div class="max-w-2xl mx-auto flex items-center gap-3 px-4 py-3">
         <button
           type="button"
-          class="p-2 -ml-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+          class="p-2 -ml-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           @click="router.push('/')"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-        <h1 class="text-base font-semibold text-gray-900">Настройки профиля</h1>
+        <h1 class="text-base font-semibold text-gray-900 dark:text-white">Настройки профиля</h1>
       </div>
     </header>
 
@@ -446,7 +446,7 @@ function formatDate(iso: string): string {
     <main class="max-w-2xl mx-auto px-4 py-6 space-y-4">
 
       <!-- Карточка профиля -->
-      <div class="bg-white rounded-2xl border border-gray-200">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
 
         <!-- Фон-баннер -->
         <div class="h-24 bg-linear-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-t-2xl overflow-hidden" />
@@ -528,15 +528,15 @@ function formatDate(iso: string): string {
               <div
                 v-if="showAvatarMenu"
                 class="absolute left-0 top-full mt-2 z-20 w-52
-                       bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden"
+                       bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
               >
                 <!-- Выбрать из галереи -->
                 <button
                   type="button"
-                  class="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  class="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                   @click="galleryInputRef?.click()"
                 >
-                  <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                   </svg>
@@ -546,10 +546,10 @@ function formatDate(iso: string): string {
                 <!-- Сфотографировать -->
                 <button
                   type="button"
-                  class="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-t border-gray-100"
+                  class="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-t border-gray-100 dark:border-gray-700"
                   @click="openCamera"
                 >
-                  <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -561,7 +561,7 @@ function formatDate(iso: string): string {
                 <button
                   v-if="user?.avatar_url"
                   type="button"
-                  class="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors border-t border-gray-100"
+                  class="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors border-t border-gray-100 dark:border-gray-700"
                   @click="requestDeleteAvatar"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -600,54 +600,54 @@ function formatDate(iso: string): string {
           </p>
 
           <!-- Имя -->
-          <h2 class="text-xl font-bold text-gray-900 leading-tight">{{ user?.name }}</h2>
+          <h2 class="text-xl font-bold text-gray-900 dark:text-white leading-tight">{{ user?.name }}</h2>
 
           <!-- Ник, если есть -->
-          <p v-if="user?.username" class="text-sm text-gray-500 mt-0.5">@{{ user.username }}</p>
+          <p v-if="user?.username" class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">@{{ user.username }}</p>
 
         </div>
       </div>
 
       <!-- Секция: Информация об аккаунте -->
-      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        <div class="px-4 py-3 border-b border-gray-100 bg-gray-50">
-          <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Аккаунт</h2>
+      <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+          <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Аккаунт</h2>
         </div>
 
         <!-- Email -->
         <div class="px-4 py-4 flex items-center gap-3">
-          <div class="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-            <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="w-9 h-9 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4 text-blue-500 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
           </div>
           <div class="flex-1 min-w-0">
-            <p class="text-xs text-gray-400 mb-0.5">Электронная почта</p>
-            <p class="text-sm font-medium text-gray-900 truncate">{{ user?.email }}</p>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Электронная почта</p>
+            <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ user?.email }}</p>
           </div>
           <!-- Замок: поле нередактируемое -->
-          <svg class="w-4 h-4 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
         </div>
 
-        <div class="border-t border-gray-100" />
+        <div class="border-t border-gray-100 dark:border-gray-700" />
 
         <!-- UIN -->
         <div class="px-4 py-4 flex items-center gap-3">
-          <div class="w-9 h-9 rounded-full bg-purple-50 flex items-center justify-center shrink-0">
-            <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="w-9 h-9 rounded-full bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4 text-purple-500 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
             </svg>
           </div>
           <div class="flex-1 min-w-0">
-            <p class="text-xs text-gray-400 mb-0.5">UIN</p>
-            <p class="text-sm font-mono font-semibold text-gray-900">{{ user?.uin }}</p>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mb-0.5">UIN</p>
+            <p class="text-sm font-mono font-semibold text-gray-900 dark:text-white">{{ user?.uin }}</p>
           </div>
-          <svg class="w-4 h-4 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
@@ -655,18 +655,18 @@ function formatDate(iso: string): string {
       </div>
 
       <!-- Секция: Ник -->
-      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        <div class="px-4 py-3 border-b border-gray-100 bg-gray-50">
-          <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Имя пользователя</h2>
+      <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+          <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Имя пользователя</h2>
         </div>
 
         <div class="px-4 py-4 space-y-3">
           <div>
-            <label class="block text-xs text-gray-400 mb-1.5">Ник</label>
+            <label class="block text-xs text-gray-400 dark:text-gray-500 mb-1.5">Ник</label>
             <div class="flex">
               <!-- Префикс @ -->
-              <div class="flex items-center px-3 bg-gray-50 border border-gray-200 border-r-0 rounded-l-lg
-                          text-sm text-gray-400 select-none shrink-0">
+              <div class="flex items-center px-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 border-r-0 rounded-l-lg
+                          text-sm text-gray-400 dark:text-gray-500 select-none shrink-0">
                 @
               </div>
               <input
@@ -675,11 +675,11 @@ function formatDate(iso: string): string {
                 maxlength="20"
                 placeholder="username"
                 :class="[
-                  'flex-1 px-3 py-2 text-sm border rounded-r-lg',
-                  'focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-gray-300',
+                  'flex-1 px-3 py-2 text-sm border rounded-r-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-gray-600',
+                  'focus:outline-none focus:ring-2 focus:border-transparent',
                   usernameValidationError
-                    ? 'border-red-300 focus:ring-red-400'
-                    : 'border-gray-200 focus:ring-blue-400'
+                    ? 'border-red-300 dark:border-red-700 focus:ring-red-400 dark:focus:ring-red-500'
+                    : 'border-gray-200 dark:border-gray-600 focus:ring-blue-400 dark:focus:ring-blue-500'
                 ]"
                 @keydown.enter="saveUsername"
               />
@@ -710,7 +710,7 @@ function formatDate(iso: string): string {
             </p>
 
             <!-- Подсказка -->
-            <p v-else class="text-xs text-gray-400 mt-1.5">
+            <p v-else class="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
               От 3 до 20 символов: латиница, цифры,
               <span class="font-mono">_</span> и <span class="font-mono">-</span>
             </p>
@@ -724,8 +724,8 @@ function formatDate(iso: string): string {
                      flex items-center justify-center gap-2
                      disabled:opacity-40 disabled:cursor-not-allowed"
               :class="canSaveUsername
-                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                : 'bg-gray-100 text-gray-400 cursor-not-allowed'"
+                ? 'bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'"
               :disabled="!canSaveUsername || isSavingUsername"
               @click="saveUsername"
             >
@@ -743,8 +743,8 @@ function formatDate(iso: string): string {
                      flex items-center justify-center gap-2
                      disabled:opacity-40 disabled:cursor-not-allowed"
               :class="isDeletingUsername
-                ? 'border-gray-200 text-gray-400'
-                : 'border-red-200 text-red-600 hover:bg-red-50'"
+                ? 'border-gray-200 dark:border-gray-600 text-gray-400 dark:text-gray-500'
+                : 'border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30'"
               :disabled="isDeletingUsername"
               @click="deleteUsername"
             >
@@ -758,9 +758,63 @@ function formatDate(iso: string): string {
         </div>
       </div>
 
+      <!-- Секция: Тема интерфейса -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors">
+        <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+          <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Внешний вид</h2>
+        </div>
+
+        <div class="px-4 py-4">
+          <div class="flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3 flex-1">
+              <div class="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                   :class="profileStore.isDarkMode ? 'bg-indigo-500/10' : 'bg-amber-50'">
+                <!-- Иконка солнца для светлой темы -->
+                <svg v-if="!profileStore.isDarkMode" class="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd" />
+                </svg>
+                <!-- Иконка луны для тёмной темы -->
+                <svg v-else class="w-5 h-5 text-indigo-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                </svg>
+              </div>
+              <div class="flex-1">
+                <p class="text-sm font-medium text-gray-900 dark:text-white">
+                  {{ profileStore.isDarkMode ? 'Тёмная тема' : 'Светлая тема' }}
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  {{ profileStore.isDarkMode ? 'Режим для работы ночью' : 'Режим для дневной работы' }}
+                </p>
+              </div>
+            </div>
+
+            <!-- Toggle Switch -->
+            <button
+              type="button"
+              @click="profileStore.toggleTheme()"
+              class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+              :class="profileStore.isDarkMode ? 'bg-indigo-600' : 'bg-gray-200'"
+            >
+              <span
+                class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm"
+                :class="profileStore.isDarkMode ? 'translate-x-6' : 'translate-x-1'"
+              />
+            </button>
+          </div>
+
+          <!-- Подсказка -->
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-3 flex items-start gap-1.5">
+            <svg class="w-3.5 h-3.5 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+            </svg>
+            <span>Тема сохраняется автоматически и применяется ко всем страницам</span>
+          </p>
+        </div>
+      </div>
+
       <!-- Секция: Активные сессии -->
-      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        <div class="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex items-center justify-between">
           <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Активные сессии</h2>
           <span v-if="!isLoadingSessions" class="text-xs font-semibold text-white bg-blue-500 rounded-full px-2 py-0.5">
             {{ sessions.length }}
@@ -791,7 +845,7 @@ function formatDate(iso: string): string {
         </div>
 
         <!-- Список сессий -->
-        <ul v-else class="divide-y divide-gray-100">
+        <ul v-else class="divide-y divide-gray-100 dark:divide-gray-700">
           <li
             v-for="session in sessions"
             :key="session.id"
@@ -801,18 +855,18 @@ function formatDate(iso: string): string {
             <!-- Иконка устройства -->
             <div
               class="w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-0.5"
-              :class="session.is_current ? 'bg-blue-50' : 'bg-gray-100'"
+              :class="session.is_current ? 'bg-blue-50 dark:bg-blue-900/30' : 'bg-gray-100 dark:bg-gray-700'"
             >
               <!-- iPhone / iPad / iOS -->
               <svg v-if="getDeviceType(session.device_name) === 'iphone'"
-                class="w-4 h-4" :class="session.is_current ? 'text-blue-500' : 'text-gray-400'"
+                class="w-4 h-4" :class="session.is_current ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'"
                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
               </svg>
               <!-- Android -->
               <svg v-else-if="getDeviceType(session.device_name) === 'android'"
-                class="w-4 h-4" :class="session.is_current ? 'text-blue-500' : 'text-gray-400'"
+                class="w-4 h-4" :class="session.is_current ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'"
                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M8 21h8a2 2 0 002-2V9a2 2 0 00-2-2H8a2 2 0 00-2 2v10a2 2 0 002 2z"/>
@@ -858,16 +912,16 @@ function formatDate(iso: string): string {
             <!-- Информация о сессии -->
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 flex-wrap">
-                <span class="text-sm font-medium text-gray-900">{{ session.device_name }}</span>
+                <span class="text-sm font-medium text-gray-900 dark:text-white">{{ session.device_name }}</span>
                 <span
                   v-if="session.is_current"
-                  class="text-xs font-semibold text-green-700 bg-green-100 rounded-full px-2 py-0.5"
+                  class="text-xs font-semibold text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 rounded-full px-2 py-0.5"
                 >
                   Текущая
                 </span>
               </div>
-              <p class="text-xs text-gray-400 mt-0.5">{{ session.ip_address }}</p>
-              <p class="text-xs text-gray-400">Вход: {{ formatDate(session.confirmed_at) }}</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ session.ip_address }}</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500">Вход: {{ formatDate(session.confirmed_at) }}</p>
             </div>
 
             <!-- Кнопка завершения -->
@@ -898,10 +952,10 @@ function formatDate(iso: string): string {
         <!-- Подвал: ошибка действия + кнопка "Завершить все" -->
         <div
           v-if="!isLoadingSessions"
-          class="px-4 py-3 border-t border-gray-100 bg-gray-50 space-y-2"
+          class="px-4 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 space-y-2"
         >
           <!-- Ошибка действия (end/end-all) -->
-          <p v-if="sessionsError && sessions.length > 0" class="text-xs text-red-500 text-center">
+          <p v-if="sessionsError && sessions.length > 0" class="text-xs text-red-500 dark:text-red-400 text-center">
             {{ sessionsError }}
           </p>
 
@@ -913,8 +967,8 @@ function formatDate(iso: string): string {
                    flex items-center justify-center gap-2
                    disabled:opacity-40 disabled:cursor-not-allowed"
             :class="isEndingAll
-              ? 'border-gray-200 text-gray-400'
-              : 'border-red-200 text-red-600 hover:bg-red-50'"
+              ? 'border-gray-200 dark:border-gray-600 text-gray-400 dark:text-gray-500'
+              : 'border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30'"
             :disabled="isEndingAll || endingSessionId !== null"
             @click="askEndAllOtherSessions"
           >
@@ -928,17 +982,17 @@ function formatDate(iso: string): string {
       </div>
 
       <!-- Секция: Язык интерфейса -->
-      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        <div class="px-4 py-3 border-b border-gray-100 bg-gray-50">
-          <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Язык интерфейса</h2>
+      <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+          <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Язык интерфейса</h2>
         </div>
 
-        <ul class="divide-y divide-gray-100">
+        <ul class="divide-y divide-gray-100 dark:divide-gray-700">
           <li v-for="lang in languages" :key="lang.code">
             <button
               type="button"
               class="w-full flex items-center gap-3 px-4 py-3.5 transition-colors text-left"
-              :class="selectedLocale === lang.code ? 'bg-blue-50' : 'hover:bg-gray-50'"
+              :class="selectedLocale === lang.code ? 'bg-blue-50 dark:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700'"
               @click="selectedLocale = lang.code"
             >
               <!-- Флаг -->
@@ -947,7 +1001,7 @@ function formatDate(iso: string): string {
               <!-- Название -->
               <span
                 class="flex-1 text-sm font-medium"
-                :class="selectedLocale === lang.code ? 'text-blue-700' : 'text-gray-800'"
+                :class="selectedLocale === lang.code ? 'text-blue-700 dark:text-blue-400' : 'text-gray-800 dark:text-gray-200'"
               >
                 {{ lang.nativeName }}
               </span>
@@ -955,7 +1009,7 @@ function formatDate(iso: string): string {
               <!-- Галочка для выбранного -->
               <svg
                 v-if="selectedLocale === lang.code"
-                class="w-4 h-4 text-blue-600 shrink-0"
+                class="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0"
                 fill="none" stroke="currentColor" viewBox="0 0 24 24"
               >
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
@@ -965,7 +1019,7 @@ function formatDate(iso: string): string {
         </ul>
 
         <!-- Подвал: статус + кнопка сохранения -->
-        <div class="px-4 py-3 border-t border-gray-100 bg-gray-50 space-y-2">
+        <div class="px-4 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 space-y-2">
 
           <!-- Успех -->
           <p v-if="localeSuccess" class="text-xs text-green-600 text-center flex items-center justify-center gap-1">
@@ -989,8 +1043,8 @@ function formatDate(iso: string): string {
                    flex items-center justify-center gap-2
                    disabled:opacity-40 disabled:cursor-not-allowed"
             :class="canSaveLocale
-              ? 'bg-blue-600 text-white hover:bg-blue-700'
-              : 'bg-gray-100 text-gray-400'"
+              ? 'bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500'"
             :disabled="!canSaveLocale || isSavingLocale"
             @click="saveLocale"
           >

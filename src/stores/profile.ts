@@ -11,6 +11,9 @@ export const useProfileStore = defineStore('profile', () => {
   const isLoading = ref(false);
   const error = ref<string | null>(null);
 
+  // Theme state
+  const theme = ref<'light' | 'dark'>('light');
+
   // Getters
   const currentStatus = computed(() => profile.value?.online_status);
   const customStatus = computed(() => profile.value?.custom_status);
@@ -22,6 +25,7 @@ export const useProfileStore = defineStore('profile', () => {
       native_name: languagesData.value!.language_names[code] || code,
     }));
   });
+  const isDarkMode = computed(() => theme.value === 'dark');
 
   // Actions
   const fetchProfile = async () => {
@@ -138,6 +142,45 @@ export const useProfileStore = defineStore('profile', () => {
     error.value = null;
   };
 
+  // Theme actions
+  const initializeTheme = () => {
+    // Загружаем тему из localStorage или используем системную настройку
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+
+    if (savedTheme) {
+      theme.value = savedTheme;
+    } else {
+      // Проверяем системные настройки
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      theme.value = prefersDark ? 'dark' : 'light';
+    }
+
+    applyTheme();
+  };
+
+  const setTheme = (newTheme: 'light' | 'dark') => {
+    theme.value = newTheme;
+    localStorage.setItem('theme', newTheme);
+    applyTheme();
+  };
+
+  const toggleTheme = () => {
+    const newTheme = theme.value === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+  };
+
+  const applyTheme = () => {
+    // Применяем или удаляем класс 'dark' на документе
+    console.log('Applying theme:', theme.value);
+    if (theme.value === 'dark') {
+      document.documentElement.classList.add('dark');
+      console.log('Dark mode enabled');
+    } else {
+      document.documentElement.classList.remove('dark');
+      console.log('Light mode enabled');
+    }
+  };
+
   return {
     // State
     profile,
@@ -145,11 +188,13 @@ export const useProfileStore = defineStore('profile', () => {
     languagesData,
     isLoading,
     error,
+    theme,
 
     // Getters
     currentStatus,
     customStatus,
     availableLanguages,
+    isDarkMode,
 
     // Actions
     fetchProfile,
@@ -160,6 +205,9 @@ export const useProfileStore = defineStore('profile', () => {
     fetchLanguages,
     updateLocale,
     clearError,
+    initializeTheme,
+    setTheme,
+    toggleTheme,
   };
 });
 

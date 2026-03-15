@@ -80,8 +80,8 @@ const getOtherUser = (chat: Chat): ChatUser | undefined =>
 </script>
 
 <template>
-  <div class="flex-1 overflow-y-auto">
-    <div v-if="filteredChats.length === 0" class="p-4 text-center text-gray-500">
+  <div class="flex-1 overflow-y-auto bg-white dark:bg-gray-800">
+    <div v-if="filteredChats.length === 0" class="p-4 text-center text-gray-500 dark:text-gray-400">
       <p v-if="searchQuery">Чаты не найдены</p>
       <p v-else>Нет чатов</p>
     </div>
@@ -89,14 +89,16 @@ const getOtherUser = (chat: Chat): ChatUser | undefined =>
     <div
       v-for="chat in filteredChats"
       :key="chat.id"
-      class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100"
-      :class="{ 'bg-blue-50': chat.id === selectedChatId }"
+      class="flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors border-b border-gray-100 dark:border-gray-700"
+      :class="chat.id === selectedChatId
+        ? 'bg-blue-50 dark:bg-blue-900/30'
+        : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50'"
       @click="emit('selectChat', chat.id)"
     >
       <!-- Avatar -->
       <div class="relative shrink-0">
         <!-- Фото или инициалы -->
-        <div class="w-12 h-12 rounded-full overflow-hidden ring-2 ring-white shadow-sm">
+        <div class="w-12 h-12 rounded-full overflow-hidden ring-2 ring-white dark:ring-gray-700 shadow-sm">
           <img
             v-if="getOtherUser(chat)?.avatar_url"
             :src="getOtherUser(chat)?.avatar_url ?? ''"
@@ -113,30 +115,30 @@ const getOtherUser = (chat: Chat): ChatUser | undefined =>
         <!-- Иконка онлайн-статуса собеседника -->
         <span
           v-if="getOtherUser(chat)?.status === 'online'"
-          class="absolute -bottom-0.5 -right-0.5 w-5 h-5 flex items-center justify-center bg-white rounded-full shadow-sm text-xs leading-none"
+          class="absolute -bottom-0.5 -right-0.5 w-5 h-5 flex items-center justify-center bg-white dark:bg-gray-800 rounded-full shadow-sm text-xs leading-none"
         >{{ getStatusEmoji(getOtherUser(chat)?.online_status) }}</span>
       </div>
 
       <!-- Chat Info -->
       <div class="flex-1 min-w-0">
         <div class="flex justify-between items-baseline mb-1">
-          <h3 class="font-semibold text-gray-900 truncate">{{ getChatName(chat) }}</h3>
-          <span v-if="chat.last_message" class="text-xs text-gray-500 shrink-0 ml-2">
+          <h3 class="font-semibold text-gray-900 dark:text-white truncate">{{ getChatName(chat) }}</h3>
+          <span v-if="chat.last_message" class="text-xs text-gray-500 dark:text-gray-400 shrink-0 ml-2">
             {{ formatTime(chat.last_message.created_at) }}
           </span>
         </div>
         <p v-if="chat.last_message" class="text-sm truncate"
-          :class="chat.last_message.type === 'text' ? 'text-gray-600' : 'text-gray-400 italic'"
+          :class="chat.last_message.type === 'text' ? 'text-gray-600 dark:text-gray-400' : 'text-gray-400 dark:text-gray-500 italic'"
         >
           {{ getLastMessagePreview(chat) }}
         </p>
-        <p v-else class="text-sm text-gray-400 italic">Нет сообщений</p>
+        <p v-else class="text-sm text-gray-400 dark:text-gray-500 italic">Нет сообщений</p>
       </div>
 
       <!-- Unread badge -->
       <div v-if="chat.unread_count && chat.unread_count > 0" class="shrink-0">
         <span
-          class="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-white bg-blue-600 rounded-full"
+          class="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-white bg-blue-600 dark:bg-blue-500 rounded-full"
         >
           {{ (chat.unread_count ?? 0) > 99 ? '99+' : chat.unread_count }}
         </span>

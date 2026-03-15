@@ -121,7 +121,7 @@ const goToProfile = () => {
           </div>
           <!-- Точка статуса -->
           <span
-            class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white transition-colors"
+            class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 transition-colors"
             :class="currentConfig.dotColor"
           />
         </div>
@@ -130,13 +130,13 @@ const goToProfile = () => {
       <!-- Имя и статус — клик открывает дропдаун -->
       <button
         type="button"
-        class="hidden md:block min-w-0 flex-1 text-left hover:bg-gray-100 rounded-md px-1 py-0.5 transition-colors focus:outline-none"
+        class="hidden md:block min-w-0 flex-1 text-left hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md px-1 py-0.5 transition-colors focus:outline-none"
         @click="isOpen = !isOpen"
       >
-        <div class="font-semibold text-gray-900 text-sm leading-tight truncate">
+        <div class="font-semibold text-gray-900 dark:text-white text-sm leading-tight truncate">
           {{ authStore.user?.name }}
         </div>
-        <div class="text-xs text-gray-500 truncate leading-tight mt-0.5 flex items-center gap-1.5">
+        <div class="text-xs text-gray-500 dark:text-gray-400 truncate leading-tight mt-0.5 flex items-center gap-1.5">
           <span class="text-sm leading-none">{{ currentConfig.emoji }}</span>
           <span>{{ currentStatusLabel }}</span>
         </div>
@@ -155,11 +155,11 @@ const goToProfile = () => {
     >
       <div
         v-if="isOpen"
-        class="absolute left-0 top-full mt-1 z-50 w-64 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden"
+        class="absolute left-0 top-full mt-1 z-50 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
       >
         <!-- Заголовок -->
-        <div class="px-3 py-2 bg-gray-50 border-b border-gray-100">
-          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Статус</p>
+        <div class="px-3 py-2 bg-gray-50 dark:bg-gray-700 border-b border-gray-100 dark:border-gray-600">
+          <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Статус</p>
         </div>
 
         <!-- Список статусов -->
@@ -173,8 +173,8 @@ const goToProfile = () => {
               :class="[
                 s.bgHover,
                 s.key === currentKey
-                  ? 'bg-blue-50 font-semibold text-blue-700'
-                  : 'text-gray-700'
+                  ? 'bg-blue-50 dark:bg-blue-900/30 font-semibold text-blue-700 dark:text-blue-400'
+                  : 'text-gray-700 dark:text-gray-300'
               ]"
               :disabled="isSaving"
               @click="selectStatus(s.key)"
@@ -188,7 +188,7 @@ const goToProfile = () => {
               <!-- Галочка для текущего -->
               <svg
                 v-if="s.key === currentKey"
-                class="w-4 h-4 text-blue-600 shrink-0"
+                class="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0"
                 fill="none" stroke="currentColor" viewBox="0 0 24 24"
               >
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
@@ -198,19 +198,19 @@ const goToProfile = () => {
         </ul>
 
         <!-- Кастомный статус -->
-        <div class="px-3 py-2 border-t border-gray-100 bg-gray-50">
-          <p class="text-xs text-gray-500 mb-1.5">Текст статуса (необязательно)</p>
+        <div class="px-3 py-2 border-t border-gray-100 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-1.5">Текст статуса (необязательно)</p>
           <div class="flex gap-2">
             <input
               v-model="customStatusInput"
               type="text"
               maxlength="50"
               placeholder="Что делаешь? 😊"
-              class="flex-1 text-sm px-2 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+              class="flex-1 text-sm px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500 bg-white dark:bg-gray-600 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
               @keydown.enter="saveCustomStatus"
             />
             <button
-              class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              class="px-3 py-1.5 bg-blue-600 dark:bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 transition-colors"
               :disabled="isSaving"
               @click="saveCustomStatus"
             >
@@ -223,7 +223,7 @@ const goToProfile = () => {
               </svg>
             </button>
           </div>
-          <p class="text-xs text-gray-400 mt-1 text-right">{{ customStatusInput.length }}/50</p>
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 text-right">{{ customStatusInput.length }}/50</p>
         </div>
       </div>
     </Transition>
