@@ -10,3 +10,64 @@ html, body, #app {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
+
+/* Emoji Picker Dark Theme */
+html.dark .emoji-mart {
+  background: rgba(31, 41, 55, 0.95) !important;
+  backdrop-filter: blur(12px);
+  border-color: rgba(75, 85, 99, 0.5) !important;
+}
+
+html.dark .emoji-mart-search input {
+  background: rgba(55, 65, 81, 0.8) !important;
+  border-color: rgba(75, 85, 99, 0.5) !important;
+  color: #f3f4f6 !important;
+}
+
+html.dark .emoji-mart-search input::placeholder {
+  color: rgba(156, 163, 175, 0.7) !important;
+}
+
+html.dark .emoji-mart-search input:focus {
+  border-color: #60a5fa !important;
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2) !important;
+}
+
+html.dark .emoji-mart-category-label span {
+  color: #9ca3af !important;
+}
+
+html.dark .emoji-mart h3 {
+  color: #f3f4f6 !important;
+  background-color: rgba(31, 41, 55, 0);
+}
+
+html.dark .emoji-mart-scroll {
+  scrollbar-color: rgba(75, 85, 99, 0.5) transparent;
+}
+
+html.dark .emoji-mart-anchor-icon svg {
+  fill: #9ca3af !important;
+}
+
+html.dark .emoji-mart-anchor-selected .emoji-mart-anchor-icon svg {
+  fill: #60a5fa !important;
+}
+
+html.dark .emoji-mart-anchor-bar {
+  background-color: #60a5fa !important;
+}
+
+html.dark .emoji-mart-emoji:hover::before {
+  background-color: rgba(55, 65, 81, 0.5) !important;
+}
+
+html.dark .emoji-mart-bar {
+  border-color: rgba(75, 85, 99, 0.3) !important;
+}
+
+html.dark .emoji-mart-skin-swatches {
+  background: rgba(55, 65, 81, 0.9) !important;
+  border-color: rgba(75, 85, 99, 0.5) !important;
+}
+

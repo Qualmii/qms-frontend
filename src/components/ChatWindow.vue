@@ -908,6 +908,7 @@ onUnmounted(() => {
   font-family: inherit;
   border-radius: 12px;
   border: 1px solid #e5e7eb;
+  background: #ffffff;
 }
 
 :deep(.emoji-mart-search input) {
@@ -915,6 +916,7 @@ onUnmounted(() => {
   border: 1px solid #e5e7eb;
   background: #f9fafb;
   font-size: 13px;
+  color: #111827;
 }
 
 :deep(.emoji-mart-search input:focus) {
@@ -934,12 +936,15 @@ onUnmounted(() => {
 :deep(.emoji-mart-anchor-icon svg) {
   fill: #9ca3af;
 }
+
 :deep(.emoji-mart-anchor-selected .emoji-mart-anchor-icon svg) {
   fill: #3b82f6;
 }
+
 :deep(.emoji-mart-anchor-bar) {
   background-color: #3b82f6 !important;
 }
+
 
 /* Ambient анимация градиента */
 /* Создаёт едва заметное "дыхание" фона без явного масштабирования */

@@ -170,9 +170,9 @@ export const useProfileStore = defineStore('profile', () => {
 
   const applyTheme = () => {
     if (theme.value === 'dark') {
-      document.documentElement.setAttribute('class', 'dark');
+      document.documentElement.classList.add('dark');
     } else {
-      document.documentElement.setAttribute('class', '');
+      document.documentElement.classList.remove('dark');
     }
   };
 
