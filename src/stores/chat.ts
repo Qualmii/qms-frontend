@@ -59,6 +59,8 @@ export const useChatStore = defineStore('chat', () => {
       if (user) {
         user.status = payload.status;
         user.last_seen_at = payload.last_seen_at;
+        if (payload.online_status !== null) user.online_status = payload.online_status ?? undefined;
+        user.custom_status = payload.custom_status;
       }
     });
   };

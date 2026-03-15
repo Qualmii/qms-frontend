@@ -4,16 +4,19 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useChatStore } from '@/stores/chat';
 import { useCallStore } from '@/stores/call';
+import { useProfileStore } from '@/stores/profile';
 import { webSocketService } from '@/services/websocket';
 import ChatSearch from '@/components/ChatSearch.vue';
 import ChatList from '@/components/ChatList.vue';
 import UserSearch from '@/components/UserSearch.vue';
 import ChatWindow from '@/components/ChatWindow.vue';
+import StatusPicker from '@/components/StatusPicker.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
 const chatStore = useChatStore();
 const callStore = useCallStore();
+const profileStore = useProfileStore();
 
 const selectedChatId = ref<number | null>(null);
 const searchQuery = ref('');
@@ -29,6 +32,11 @@ const currentChatData = computed(() =>
 
 onMounted(async () => {
   await chatStore.fetchChats();
+
+  // Загружаем список статусов один раз — нужен ChatWindow для отображения статуса собеседника
+  if (Object.keys(profileStore.availableStatuses).length === 0) {
+    profileStore.fetchAvailableStatuses();
+  }
 
   // Подписываемся на личный канал пользователя (входящие звонки, онлайн-статусы)
   if (authStore.user?.id && webSocketService.isConnected()) {
@@ -87,18 +95,11 @@ const toggleSidebar = () => {
       ]"
     >
       <!-- Sidebar Header -->
-      <div class="flex items-center justify-between px-4 py-4 border-b bg-white">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full bg-linear-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold">
-            {{ authStore.user?.name?.substring(0, 2).toUpperCase() }}
-          </div>
-          <div class="hidden md:block">
-            <h2 class="font-semibold text-gray-900">{{ authStore.user?.name }}</h2>
-            <p class="text-xs text-gray-500">@{{ authStore.user?.username || authStore.user?.uin }}</p>
-          </div>
-        </div>
+      <div class="flex items-center justify-between px-4 py-3 border-b bg-white gap-2">
+        <!-- Выбор статуса в стиле ICQ -->
+        <StatusPicker class="flex-1 min-w-0" />
 
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1 shrink-0">
           <button
             @click="showUserSearch = true"
             class="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"

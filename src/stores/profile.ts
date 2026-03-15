@@ -65,11 +65,8 @@ export const useProfileStore = defineStore('profile', () => {
     try {
       const response = await apiClient.setStatus(status, customMessage);
       if (profile.value) {
-        profile.value.status = {
-          status: response.data.online_status,
-          custom_message: customMessage,
-          last_seen: profile.value.status?.last_seen,
-        };
+        profile.value.online_status = response.data.online_status;
+        profile.value.custom_status = customMessage ?? null;
       }
       return response.data;
     } catch (err: any) {

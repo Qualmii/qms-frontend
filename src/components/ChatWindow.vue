@@ -5,6 +5,8 @@ import rawEmojiData from 'emoji-mart-vue-fast/data/all.json'
 import 'emoji-mart-vue-fast/css/emoji-mart.css'
 import { useAuthStore } from '@/stores/auth'
 import { useChatStore } from '@/stores/chat'
+import { useProfileStore } from '@/stores/profile'
+import { getStatusEmoji } from '@/utils/statusConfig'
 import type { Chat, Message } from '@/types/api'
 import VoiceRecorder from '@/components/VoiceRecorder.vue'
 import VoicePlayer from '@/components/VoicePlayer.vue'
@@ -13,6 +15,7 @@ const props = defineProps<{ chat: Chat }>()
 
 const authStore = useAuthStore()
 const chatStore = useChatStore()
+const profileStore = useProfileStore()
 
 const messageText = ref('')
 const isSending = ref(false)
@@ -176,6 +179,29 @@ const otherUser = computed(() =>
 
 const isOnline = computed(() => otherUser.value?.status === 'online')
 
+/**
+ * Строка статуса под именем собеседника, когда он онлайн.
+ * Примеры: "Готов поболтать", "В сети · Пишу код", "Готов поболтать · Пишу код"
+ */
+const onlineStatusLabel = computed(() => {
+  const user = otherUser.value
+  if (!user) return 'В сети'
+  // Если есть кастомный текст — показываем только его
+  const custom = user.custom_status?.trim() || null
+  if (custom) return custom
+  // Иначе — название статуса (или «В сети» для дефолтного)
+  const moodKey = user.online_status
+  if (moodKey && moodKey !== 'online') {
+    return profileStore.availableStatuses[moodKey] ?? 'В сети'
+  }
+  return 'В сети'
+})
+
+/** Эмодзи для текущего статуса собеседника */
+const onlineStatusEmoji = computed(() =>
+  getStatusEmoji(otherUser.value?.online_status)
+)
+
 // Реактивное "сейчас" — обновляется каждые 30 с, чтобы "N мин. назад" не замерзало
 const now = ref(Date.now())
 let clockTimer: ReturnType<typeof setInterval> | null = null
@@ -323,8 +349,18 @@ onUnmounted(() => {
         <h3 class="font-semibold text-gray-900 truncate leading-tight">{{ chatName }}</h3>
         <p class="text-xs leading-tight mt-0.5" :class="isOnline ? 'text-green-500' : 'text-gray-400'">
           <span v-if="chat.type === 'private'">
-            <template v-if="isOnline">В сети</template>
-            <template v-else-if="otherUser?.last_seen_at">был(а) {{ formatLastSeen(otherUser.last_seen_at) }}</template>
+            <template v-if="isOnline">
+              <span class="flex items-center gap-1.5">
+                <span class="text-sm leading-none">{{ onlineStatusEmoji }}</span>
+                <span>{{ onlineStatusLabel }}</span>
+              </span>
+            </template>
+            <template v-else-if="otherUser?.last_seen_at">
+              <span class="flex items-center gap-1.5">
+                <span class="text-sm leading-none">🕐</span>
+                <span>был(а) {{ formatLastSeen(otherUser.last_seen_at) }}</span>
+              </span>
+            </template>
             <template v-else>Не в сети</template>
           </span>
           <span v-else class="text-gray-400">{{ chat.users?.length || 0 }} участников</span>

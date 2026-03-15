@@ -94,6 +94,7 @@ export interface ChatUser {
   username?: string;
   status?: 'online' | 'offline';
   online_status?: string;
+  custom_status?: string | null;
   last_seen_at?: string | null;
   pivot: {
     chat_id: number;
@@ -200,6 +201,7 @@ export interface WsCallUpdatedPayload {
 export interface WsUserPresencePayload {
   user_id: string;
   status: 'online' | 'offline';
+  online_status: string | null;
   custom_status: string | null;
   last_seen_at: string | null;
 }
