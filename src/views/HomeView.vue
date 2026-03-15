@@ -35,6 +35,7 @@ onMounted(async () => {
     webSocketService.subscribeToUserChannel(
       authStore.user.id,
       callStore.handleCallUpdated,
+      chatStore.updateUserPresence,
     );
   }
 });

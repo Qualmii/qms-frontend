@@ -1,6 +1,6 @@
 import { defineStore, acceptHMRUpdate } from 'pinia';
 import { ref, computed } from 'vue';
-import type { Chat, Message, WsMessageSentPayload } from '@/types/api';
+import type { Chat, Message, WsMessageSentPayload, WsUserPresencePayload } from '@/types/api';
 import { apiClient } from '@/services/api';
 import { webSocketService } from '@/services/websocket';
 
@@ -50,6 +50,19 @@ export const useChatStore = defineStore('chat', () => {
     }
   };
 
+  /**
+   * Обновляет статус пользователя во всех чатах при получении WS-события user.presence.
+   */
+  const updateUserPresence = (payload: WsUserPresencePayload) => {
+    chats.value.forEach(chat => {
+      const user = chat.users?.find(u => u.id === payload.user_id);
+      if (user) {
+        user.status = payload.status;
+        user.last_seen_at = payload.last_seen_at;
+      }
+    });
+  };
+
   const createChat = async (type: 'private' | 'group', name?: string, userIds?: string[]) => {
     try {
       const response = await apiClient.createChat({ type, name, user_ids: userIds });
@@ -75,7 +88,7 @@ export const useChatStore = defineStore('chat', () => {
     currentChat.value = chat;
 
     // Подписываемся на Reverb-канал нового чата
-    webSocketService.subscribeToChatChannel(chatId, handleWsMessageSent);
+    webSocketService.subscribeToChatChannel(chatId, handleWsMessageSent, updateUserPresence);
 
     // Load messages if not already loaded
     if (!messages.value[chatId]) {
@@ -223,6 +236,8 @@ export const useChatStore = defineStore('chat', () => {
   };
 
   // WebSocket handlers
+
+
   /**
    * Обработчик события message.sent от Reverb.
    * Payload содержит только метаданные — загружаем полный контент через REST.
@@ -312,6 +327,7 @@ export const useChatStore = defineStore('chat', () => {
     clearCurrentChat,
     clearError,
     handleWsMessageSent,
+    updateUserPresence,
   };
 });
 

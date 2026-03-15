@@ -176,6 +176,32 @@ const otherUser = computed(() =>
 
 const isOnline = computed(() => otherUser.value?.status === 'online')
 
+// Реактивное "сейчас" — обновляется каждые 30 с, чтобы "N мин. назад" не замерзало
+const now = ref(Date.now())
+let clockTimer: ReturnType<typeof setInterval> | null = null
+
+onMounted(() => {
+  clockTimer = setInterval(() => { now.value = Date.now() }, 30_000)
+})
+
+onUnmounted(() => {
+  if (clockTimer) clearInterval(clockTimer)
+})
+
+const formatLastSeen = (dateStr: string): string => {
+  const date = new Date(dateStr)
+  const diffMs = now.value - date.getTime()
+  const diffMins = Math.floor(diffMs / 60_000)
+  const diffHours = Math.floor(diffMins / 60)
+  const diffDays = Math.floor(diffHours / 24)
+
+  if (diffMins < 1) return 'только что'
+  if (diffMins < 60) return `${diffMins} мин. назад`
+  if (diffHours < 24) return `сегодня в ${date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`
+  if (diffDays === 1) return `вчера в ${date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`
+  return date.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long' })
+}
+
 const scrollToBottom = async () => {
   await nextTick()
   if (messagesContainer.value) {
@@ -296,7 +322,11 @@ onUnmounted(() => {
       <div class="flex-1 min-w-0">
         <h3 class="font-semibold text-gray-900 truncate leading-tight">{{ chatName }}</h3>
         <p class="text-xs leading-tight mt-0.5" :class="isOnline ? 'text-green-500' : 'text-gray-400'">
-          <span v-if="chat.type === 'private'">{{ isOnline ? 'В сети' : 'Не в сети' }}</span>
+          <span v-if="chat.type === 'private'">
+            <template v-if="isOnline">В сети</template>
+            <template v-else-if="otherUser?.last_seen_at">был(а) {{ formatLastSeen(otherUser.last_seen_at) }}</template>
+            <template v-else>Не в сети</template>
+          </span>
           <span v-else class="text-gray-400">{{ chat.users?.length || 0 }} участников</span>
         </p>
       </div>

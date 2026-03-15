@@ -83,13 +83,20 @@ class WebSocketService {
 
   // ─── Приватный канал чата: chat.{id} ──────────────────────────────────────
 
-  subscribeToChatChannel(chatId: number, onMessageSent: MessageSentCallback): void {
+  subscribeToChatChannel(
+    chatId: number,
+    onMessageSent: MessageSentCallback,
+    onPresenceChanged?: UserPresenceCallback,
+  ): void {
     if (!this.echo) return;
 
     const channelName = `chat.${chatId}`;
     if (this.subscribedChannels.has(channelName)) return;
 
-    this.echo.private(channelName).listen('.message.sent', onMessageSent);
+    const channel = this.echo.private(channelName).listen('.message.sent', onMessageSent);
+    if (onPresenceChanged) {
+      channel.listen('.user.presence', onPresenceChanged);
+    }
     this.subscribedChannels.add(channelName);
   }
 
