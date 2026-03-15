@@ -198,12 +198,47 @@ onMounted(() => {
 
 // ─── Язык ─────────────────────────────────────────────────────────────────
 const selectedLocale = ref(user.value?.locale ?? 'ru')
+const isSavingLocale = ref(false)
+const localeError    = ref<string | null>(null)
+const localeSuccess  = ref(false)
 
 const languages = [
-  { code: 'ru', flag: '🇷🇺', name: 'Русский',  nativeName: 'Русский' },
-  { code: 'en', flag: '🇺🇸', name: 'English',  nativeName: 'English' },
-  { code: 'de', flag: '🇩🇪', name: 'Deutsch',  nativeName: 'Deutsch' },
+  { code: 'ru', flag: '🇷🇺', nativeName: 'Русский' },
+  { code: 'en', flag: '🇺🇸', nativeName: 'English' },
+  { code: 'de', flag: '🇩🇪', nativeName: 'Deutsch' },
 ]
+
+const canSaveLocale = computed(() =>
+  selectedLocale.value !== (user.value?.locale ?? 'ru')
+)
+
+const saveLocale = async () => {
+  if (!canSaveLocale.value || isSavingLocale.value) return
+  isSavingLocale.value = true
+  localeError.value = null
+  localeSuccess.value = false
+  try {
+    await profileStore.updateLocale(selectedLocale.value)
+
+    // Обновляем локаль в сторе и localStorage
+    if (authStore.user) {
+      authStore.user.locale = selectedLocale.value
+      localStorage.setItem('user', JSON.stringify(authStore.user))
+    }
+
+    // Перезапрашиваем локализованные данные — бэкенд вернёт их уже
+    // в новой локали, StatusPicker обновится без перезагрузки страницы
+    await profileStore.fetchAvailableStatuses()
+
+    localeSuccess.value = true
+    setTimeout(() => { localeSuccess.value = false }, 3000)
+  } catch {
+    localeError.value = 'Не удалось сохранить язык'
+    setTimeout(() => { localeError.value = null }, 3000)
+  } finally {
+    isSavingLocale.value = false
+  }
+}
 
 type DeviceType = 'iphone' | 'android' | 'macos' | 'windows' | 'linux' | 'phone' | 'desktop'
 
@@ -640,15 +675,41 @@ function formatDate(iso: string): string {
           </li>
         </ul>
 
-        <!-- Кнопка сохранения -->
-        <div class="px-4 py-3 border-t border-gray-100 bg-gray-50">
+        <!-- Подвал: статус + кнопка сохранения -->
+        <div class="px-4 py-3 border-t border-gray-100 bg-gray-50 space-y-2">
+
+          <!-- Успех -->
+          <p v-if="localeSuccess" class="text-xs text-green-600 text-center flex items-center justify-center gap-1">
+            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+            </svg>
+            Язык сохранён
+          </p>
+
+          <!-- Ошибка -->
+          <p v-else-if="localeError" class="text-xs text-red-500 text-center flex items-center justify-center gap-1">
+            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+            </svg>
+            {{ localeError }}
+          </p>
+
           <button
             type="button"
-            class="w-full py-2 px-4 bg-blue-600 text-white text-sm font-medium rounded-xl
-                   hover:bg-blue-700 transition-colors disabled:opacity-40"
-            disabled
+            class="w-full py-2 px-4 text-sm font-medium rounded-xl transition-colors
+                   flex items-center justify-center gap-2
+                   disabled:opacity-40 disabled:cursor-not-allowed"
+            :class="canSaveLocale
+              ? 'bg-blue-600 text-white hover:bg-blue-700'
+              : 'bg-gray-100 text-gray-400'"
+            :disabled="!canSaveLocale || isSavingLocale"
+            @click="saveLocale"
           >
-            Сохранить язык
+            <svg v-if="isSavingLocale" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+            </svg>
+            {{ isSavingLocale ? 'Сохраняем…' : 'Сохранить язык' }}
           </button>
         </div>
       </div>
