@@ -190,7 +190,7 @@ const formatTime = (dateStr: string) => {
   return new Date(dateStr).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
 }
 
-const isOwn = (msg: Message) => msg.sender_id === authStore.user?.id
+const isOwn = (msg: Message) => (msg.sender?.id ?? msg.sender_id) === authStore.user?.id
 const getSenderName = (msg: Message) => msg.sender?.name || '?'
 const getSenderAvatar = (msg: Message) => (msg.sender?.name || '?').substring(0, 2).toUpperCase()
 
