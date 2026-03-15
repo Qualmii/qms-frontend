@@ -277,6 +277,17 @@ onMounted(() => {
   scrollToBottom()
   // При монтировании также помечаем как прочитанные если есть непрочитанные
   markMessagesAsRead()
+
+  // Добавляем слушатель прокрутки для градиента
+  messagesContainer.value?.addEventListener('scroll', handleScroll)
+
+  // Инициализируем градиент
+  animateGradientColors()
+})
+
+onUnmounted(() => {
+  // Убираем слушатель при размонтировании
+  messagesContainer.value?.removeEventListener('scroll', handleScroll)
 })
 
 const formatTime = (dateStr: string) => {
@@ -343,6 +354,97 @@ const handleVoice = () => { showVoiceRecorder.value = true }
 // ─── Voice recorder ───────────────────────────────────────────────────────────
 const showVoiceRecorder = ref(false)
 
+// ─── Dynamic gradient background ──────────────────────────────────────────────
+const gradientOffset1 = ref(20)
+const gradientOffset2 = ref(60)
+const gradientOffset3 = ref(80)
+const gradientHue1 = ref(200) // Начальные оттенки для светлой темы
+const gradientHue2 = ref(280)
+const gradientHue3 = ref(320)
+const isPulsing = ref(false)
+
+// Функция для плавного изменения градиента при прокрутке
+const handleScroll = () => {
+  const container = messagesContainer.value
+  if (!container) return
+
+  const scrollPercentage = (container.scrollTop / (container.scrollHeight - container.clientHeight)) * 100
+
+  // Медленное изменение позиций пятен на основе прокрутки
+  gradientOffset1.value = 20 + (scrollPercentage * 0.3)
+  gradientOffset2.value = 60 - (scrollPercentage * 0.2)
+  gradientOffset3.value = 80 + (scrollPercentage * 0.15)
+}
+
+// Функция для изменения цветов при новых сообщениях
+const animateGradientColors = () => {
+  const isDark = profileStore.isDarkMode
+
+  // Случайные сдвиги оттенков
+  const randomShift = () => Math.random() * 40 - 20
+
+  if (isDark) {
+    // Для тёмной темы — более приглушённые тона
+    gradientHue1.value = 200 + randomShift()
+    gradientHue2.value = 260 + randomShift()
+    gradientHue3.value = 300 + randomShift()
+  } else {
+    // Для светлой темы — более яркие, но мягкие тона
+    gradientHue1.value = 180 + randomShift()
+    gradientHue2.value = 220 + randomShift()
+    gradientHue3.value = 280 + randomShift()
+  }
+
+  // Запускаем пульсацию
+  isPulsing.value = true
+  setTimeout(() => {
+    isPulsing.value = false
+  }, 1000)
+}
+
+// Вычисляемый CSS для градиента
+const gradientStyle = computed(() => {
+  const isDark = profileStore.isDarkMode
+
+  if (isDark) {
+    // Тёмная тема — приглушённые цвета с низкой непрозрачностью
+    return {
+      background: `
+        radial-gradient(circle at ${gradientOffset1.value}% 20%, hsla(${gradientHue1.value}, 60%, 30%, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at ${gradientOffset2.value}% 60%, hsla(${gradientHue2.value}, 55%, 35%, 0.12) 0%, transparent 50%),
+        radial-gradient(circle at ${gradientOffset3.value}% 85%, hsla(${gradientHue3.value}, 50%, 40%, 0.1) 0%, transparent 50%)
+      `,
+      backgroundColor: '#111827', // gray-900
+      transition: 'all 3s cubic-bezier(0.4, 0, 0.2, 1)',
+    }
+  } else {
+    // Светлая тема — мягкие пастельные тона
+    return {
+      background: `
+        radial-gradient(circle at ${gradientOffset1.value}% 20%, hsla(${gradientHue1.value}, 70%, 85%, 0.6) 0%, transparent 50%),
+        radial-gradient(circle at ${gradientOffset2.value}% 60%, hsla(${gradientHue2.value}, 65%, 88%, 0.5) 0%, transparent 50%),
+        radial-gradient(circle at ${gradientOffset3.value}% 85%, hsla(${gradientHue3.value}, 60%, 90%, 0.4) 0%, transparent 50%)
+      `,
+      backgroundColor: '#f0f2f5',
+      transition: 'all 3s cubic-bezier(0.4, 0, 0.2, 1)',
+    }
+  }
+})
+
+// Инициализация градиента при смене темы
+watch(() => profileStore.isDarkMode, () => {
+  animateGradientColors()
+})
+
+// Реакция на новые сообщения
+watch(messages, (newMessages, oldMessages) => {
+  if (newMessages.length > oldMessages.length) {
+    animateGradientColors()
+  }
+}, { deep: true })
+
+// ─── /Dynamic gradient background ─────────────────────────────────────────────
+
 const handleVoiceSend = async (file: File) => {
   showVoiceRecorder.value = false
   isSending.value = true
@@ -372,10 +474,20 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-col h-full bg-[#f0f2f5] dark:bg-gray-900">
+  <div class="flex flex-col h-full relative overflow-hidden">
+
+    <!-- Динамический градиентный фон -->
+    <div
+      class="absolute inset-0 pointer-events-none gradient-ambient"
+      :class="{ 'gradient-pulse': isPulsing }"
+      :style="gradientStyle"
+    />
+
+    <!-- Контент поверх градиента -->
+    <div class="relative z-10 flex flex-col h-full">
 
     <!-- Header -->
-    <div class="flex items-center gap-3 px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 shadow-sm z-10">
+    <div class="flex items-center gap-3 px-4 py-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-100 dark:border-gray-700 shadow-sm">
       <div class="relative flex-shrink-0">
         <!-- Фото или инициалы -->
         <div class="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white shadow-sm">
@@ -443,7 +555,7 @@ onUnmounted(() => {
         <!-- Own message (right) -->
         <div v-if="isOwn(msg)" class="flex justify-end items-end gap-1">
           <div class="flex flex-col items-end">
-            <div class="bg-blue-500 text-white rounded-2xl rounded-br-sm px-4 py-2 max-w-xs md:max-w-md lg:max-w-lg shadow-sm">
+            <div class="bg-blue-500/95 backdrop-blur-sm text-white rounded-2xl rounded-br-sm px-4 py-2 max-w-xs md:max-w-md lg:max-w-lg shadow-lg">
               <!-- Image attachment -->
               <template v-if="msg.type === 'image' && msg.attachments?.length">
                 <img
@@ -521,10 +633,10 @@ onUnmounted(() => {
             </div>
           </div>
           <div class="flex flex-col items-start max-w-xs md:max-w-md lg:max-w-lg">
-            <span v-if="chat.type === 'group'" class="text-xs font-medium text-blue-500 mb-1 ml-1">
+            <span v-if="chat.type === 'group'" class="text-xs font-medium text-blue-500 dark:text-blue-400 mb-1 ml-1">
               {{ getSenderName(msg) }}
             </span>
-            <div class="bg-white text-gray-900 rounded-2xl rounded-bl-sm px-4 py-2 shadow-sm border border-gray-100">
+            <div class="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm text-gray-900 dark:text-gray-100 rounded-2xl rounded-bl-sm px-4 py-2 shadow-lg border border-gray-200/50 dark:border-gray-700/50">
               <!-- Image attachment -->
               <template v-if="msg.type === 'image' && msg.attachments?.length">
                 <img
@@ -736,6 +848,8 @@ onUnmounted(() => {
       </template>
     </div>
 
+    </div><!-- /Контент поверх градиента -->
+
 
     <!-- Lightbox -->
     <Teleport to="body">
@@ -824,6 +938,39 @@ onUnmounted(() => {
 }
 :deep(.emoji-mart-anchor-bar) {
   background-color: #3b82f6 !important;
+}
+
+/* Ambient анимация градиента */
+@keyframes gradientFloat {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(10px, -10px) scale(1.05);
+  }
+  66% {
+    transform: translate(-10px, 10px) scale(0.95);
+  }
+}
+
+.gradient-ambient {
+  animation: gradientFloat 30s ease-in-out infinite;
+}
+
+/* Пульсация при новых сообщениях */
+@keyframes gradientPulse {
+  0%, 100% {
+    opacity: 0.9;
+    filter: brightness(1);
+  }
+  50% {
+    opacity: 1;
+    filter: brightness(1.1);
+  }
+}
+
+.gradient-pulse {
+  animation: gradientPulse 1s ease-in-out;
 }
 </style>
 
