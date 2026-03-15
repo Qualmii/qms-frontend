@@ -159,44 +159,25 @@ export const useProfileStore = defineStore('profile', () => {
   };
 
   const setTheme = (newTheme: 'light' | 'dark') => {
-    console.log('[Theme] 🎯 setTheme called with:', newTheme);
     theme.value = newTheme;
     localStorage.setItem('theme', newTheme);
-    // НЕ вызываем applyTheme здесь - это сделает watch
   };
 
   const toggleTheme = () => {
     const newTheme = theme.value === 'light' ? 'dark' : 'light';
-    console.log('[Theme] 🔄 toggleTheme: switching from', theme.value, 'to', newTheme);
     setTheme(newTheme);
   };
 
   const applyTheme = () => {
-    console.log('[Theme] === applyTheme called ===');
-    console.log('[Theme] Current theme value:', theme.value);
-    console.log('[Theme] Current HTML classes BEFORE:', document.documentElement.className);
-
-    // Альтернативный метод - через setAttribute
     if (theme.value === 'dark') {
       document.documentElement.setAttribute('class', 'dark');
-      console.log('[Theme] ✅ DARK mode - set class via setAttribute');
     } else {
       document.documentElement.setAttribute('class', '');
-      console.log('[Theme] ☀️ LIGHT mode - removed all classes via setAttribute');
     }
-
-    console.log('[Theme] Final HTML classes AFTER:', document.documentElement.className);
-    console.log('[Theme] classList.contains("dark"):', document.documentElement.classList.contains('dark'));
-
-    // Проверяем computed style
-    const computedBg = window.getComputedStyle(document.body).backgroundColor;
-    console.log('[Theme] Body computed backgroundColor:', computedBg);
-    console.log('[Theme] === applyTheme finished ===');
   };
 
   // Watch для автоматического применения темы при изменении
-  watch(theme, (newTheme, oldTheme) => {
-    console.log('[Theme] 🔔 Watch triggered! Theme changed from', oldTheme, 'to', newTheme);
+  watch(theme, () => {
     applyTheme();
   });
 
