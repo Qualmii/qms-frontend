@@ -93,6 +93,7 @@ export interface ChatUser {
   email: string;
   uin: string;
   username?: string;
+  avatar_url?: string | null;
   status?: 'online' | 'offline';
   online_status?: string;
   custom_status?: string | null;

@@ -171,6 +171,14 @@ const chatAvatar = computed(() => {
   return (props.chat.name || 'ГЧ').substring(0, 2).toUpperCase()
 })
 
+const chatAvatarUrl = computed(() => {
+  if (props.chat.type === 'private') {
+    const other = props.chat.users?.find(u => u.id !== authStore.user?.id)
+    return other?.avatar_url || null
+  }
+  return null // Для групповых чатов можно добавить групповой аватар позже
+})
+
 const otherUser = computed(() =>
   props.chat.type === 'private'
     ? props.chat.users?.find(u => u.id !== authStore.user?.id)
@@ -245,6 +253,7 @@ const formatTime = (dateStr: string) => {
 const isOwn = (msg: Message) => (msg.sender?.id ?? msg.sender_id) === authStore.user?.id
 const getSenderName = (msg: Message) => msg.sender?.name || '?'
 const getSenderAvatar = (msg: Message) => (msg.sender?.name || '?').substring(0, 2).toUpperCase()
+const getSenderAvatarUrl = (msg: Message) => msg.sender?.avatar_url || null
 
 // --- Лайтбокс для изображений ---
 const lightboxUrl = ref<string | null>(null)
@@ -333,11 +342,22 @@ onUnmounted(() => {
     <!-- Header -->
     <div class="flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100 shadow-sm z-10">
       <div class="relative flex-shrink-0">
-        <div
-          class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm select-none"
-        >
-          {{ chatAvatar }}
+        <!-- Фото или инициалы -->
+        <div class="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white shadow-sm">
+          <img
+            v-if="chatAvatarUrl"
+            :src="chatAvatarUrl"
+            :alt="chatName"
+            class="w-full h-full object-cover"
+          />
+          <div
+            v-else
+            class="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm select-none"
+          >
+            {{ chatAvatar }}
+          </div>
         </div>
+        <!-- Индикатор онлайн -->
         <span
           v-if="chat.type === 'private'"
           class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white transition-colors"
@@ -450,8 +470,20 @@ onUnmounted(() => {
 
         <!-- Incoming message (left) -->
         <div v-else class="flex items-end gap-2">
-          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-xs font-semibold shrink-0 shadow-sm">
-            {{ getSenderAvatar(msg) }}
+          <!-- Аватар отправителя -->
+          <div class="w-8 h-8 rounded-full overflow-hidden shrink-0 shadow-sm ring-2 ring-white">
+            <img
+              v-if="getSenderAvatarUrl(msg)"
+              :src="getSenderAvatarUrl(msg)!"
+              :alt="getSenderName(msg)"
+              class="w-full h-full object-cover"
+            />
+            <div
+              v-else
+              class="w-full h-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-xs font-semibold"
+            >
+              {{ getSenderAvatar(msg) }}
+            </div>
           </div>
           <div class="flex flex-col items-start max-w-xs md:max-w-md lg:max-w-lg">
             <span v-if="chat.type === 'group'" class="text-xs font-medium text-blue-500 mb-1 ml-1">

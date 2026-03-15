@@ -95,10 +95,20 @@ const getOtherUser = (chat: Chat): ChatUser | undefined =>
     >
       <!-- Avatar -->
       <div class="relative shrink-0">
-        <div
-          class="w-12 h-12 rounded-full bg-linear-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold"
-        >
-          {{ getInitials(chat) }}
+        <!-- Фото или инициалы -->
+        <div class="w-12 h-12 rounded-full overflow-hidden ring-2 ring-white shadow-sm">
+          <img
+            v-if="getOtherUser(chat)?.avatar_url"
+            :src="getOtherUser(chat)?.avatar_url ?? ''"
+            :alt="getChatName(chat)"
+            class="w-full h-full object-cover"
+          />
+          <div
+            v-else
+            class="w-full h-full bg-linear-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold"
+          >
+            {{ getInitials(chat) }}
+          </div>
         </div>
         <!-- Иконка онлайн-статуса собеседника -->
         <span
