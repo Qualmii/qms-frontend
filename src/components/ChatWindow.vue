@@ -11,6 +11,7 @@ import { getStatusEmoji } from '@/utils/statusConfig'
 import type { Chat, Message } from '@/types/api'
 import VoiceRecorder from '@/components/VoiceRecorder.vue'
 import VoicePlayer from '@/components/VoicePlayer.vue'
+import UserInfoModal from '@/components/UserInfoModal.vue'
 
 const props = defineProps<{ chat: Chat }>()
 
@@ -152,6 +153,20 @@ watch(showEmojiPicker, (val) => {
   }
 })
 // --- /Emoji picker ---
+
+// --- User info modal ---
+const showUserInfoModal = ref(false)
+
+const openUserInfo = () => {
+  if (props.chat.type === 'private' && otherUser.value) {
+    showUserInfoModal.value = true
+  }
+}
+
+const closeUserInfo = () => {
+  showUserInfoModal.value = false
+}
+// --- /User info modal ---
 
 const messages = computed(() => chatStore.getMessagesForChat(props.chat.id))
 
@@ -489,50 +504,57 @@ onUnmounted(() => {
 
     <!-- Header -->
     <div class="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 bg-white/50 dark:bg-gray-800/50 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm">
-      <div class="relative flex-shrink-0">
-        <!-- Фото или инициалы -->
-        <div class="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white/50 dark:ring-gray-700/50 shadow-sm">
-          <img
-            v-if="chatAvatarUrl"
-            :src="chatAvatarUrl"
-            :alt="chatName"
-            class="w-full h-full object-cover"
-          />
-          <div
-            v-else
-            class="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm select-none"
-          >
-            {{ chatAvatar }}
+      <!-- Кликабельная область с аватаром и именем -->
+      <div
+        class="flex items-center gap-3 flex-1 min-w-0"
+        :class="chat.type === 'private' ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''"
+        @click="openUserInfo"
+      >
+        <div class="relative flex-shrink-0">
+          <!-- Фото или инициалы -->
+          <div class="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white/50 dark:ring-gray-700/50 shadow-sm">
+            <img
+              v-if="chatAvatarUrl"
+              :src="chatAvatarUrl"
+              :alt="chatName"
+              class="w-full h-full object-cover"
+            />
+            <div
+              v-else
+              class="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm select-none"
+            >
+              {{ chatAvatar }}
+            </div>
           </div>
+          <!-- Индикатор онлайн -->
+          <span
+            v-if="chat.type === 'private'"
+            class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white/70 dark:border-gray-800/70 transition-colors"
+            :class="isOnline ? 'bg-green-400' : 'bg-gray-300'"
+          />
         </div>
-        <!-- Индикатор онлайн -->
-        <span
-          v-if="chat.type === 'private'"
-          class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white/70 dark:border-gray-800/70 transition-colors"
-          :class="isOnline ? 'bg-green-400' : 'bg-gray-300'"
-        />
-      </div>
 
-      <div class="flex-1 min-w-0">
-        <h3 class="font-semibold text-gray-900 dark:text-white truncate leading-tight">{{ chatName }}</h3>
-        <p class="text-xs leading-tight mt-0.5" :class="isOnline ? 'text-green-500 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'">
-          <span v-if="chat.type === 'private'">
-            <template v-if="isOnline">
-              <span class="flex items-center gap-1.5">
-                <span class="text-sm leading-none">{{ onlineStatusEmoji }}</span>
-                <span>{{ onlineStatusLabel }}</span>
-              </span>
-            </template>
-            <template v-else-if="otherUser?.last_seen_at">
-              <span class="flex items-center gap-1.5">
-                <span class="text-sm leading-none">🕐</span>
-                <span>был(а) {{ formatLastSeen(otherUser.last_seen_at) }}</span>
-              </span>
-            </template>
-            <template v-else>Не в сети</template>
-          </span>
-          <span v-else class="text-gray-400">{{ chat.users?.length || 0 }} участников</span>
-        </p>
+        <div class="flex-1 min-w-0">
+          <h3 class="font-semibold text-gray-900 dark:text-white truncate leading-tight">{{ chatName }}</h3>
+          <p class="text-xs leading-tight mt-0.5" :class="isOnline ? 'text-green-500 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'">
+            <span v-if="chat.type === 'private'">
+              <template v-if="isOnline">
+                <span class="flex items-center gap-1.5">
+                  <span class="text-sm leading-none">{{ onlineStatusEmoji }}</span>
+                  <span>{{ onlineStatusLabel }}</span>
+                </span>
+              </template>
+              <template v-else-if="otherUser?.last_seen_at">
+                <span class="flex items-center gap-1.5">
+                  <span class="text-sm leading-none">🕐</span>
+                  <span>был(а) {{ formatLastSeen(otherUser.last_seen_at) }}</span>
+                </span>
+              </template>
+              <template v-else>Не в сети</template>
+            </span>
+            <span v-else class="text-gray-400">{{ chat.users?.length || 0 }} участников</span>
+          </p>
+        </div>
       </div>
     </div>
 
@@ -890,6 +912,13 @@ onUnmounted(() => {
         </a>
       </div>
     </Teleport>
+
+    <!-- User Info Modal -->
+    <UserInfoModal
+      :show="showUserInfoModal"
+      :user="otherUser"
+      @close="closeUserInfo"
+    />
   </div>
 </template>
 
