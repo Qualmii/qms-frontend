@@ -32,6 +32,14 @@ const isUploadingAvatar = ref(false)
 const isDeletingAvatar  = ref(false)
 const avatarError       = ref<string | null>(null)
 const showDeleteConfirm = ref(false)
+const showCameraCapture = ref(false)
+const videoRef         = ref<HTMLVideoElement | null>(null)
+const canvasRef        = ref<HTMLCanvasElement | null>(null)
+let mediaStream: MediaStream | null = null
+
+const isMobileDevice = () => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+}
 
 const onAvatarOutsideClick = (e: MouseEvent) => {
   if (avatarMenuRef.value && !avatarMenuRef.value.contains(e.target as Node)) {
@@ -39,7 +47,10 @@ const onAvatarOutsideClick = (e: MouseEvent) => {
   }
 }
 onMounted(() => document.addEventListener('mousedown', onAvatarOutsideClick))
-onUnmounted(() => document.removeEventListener('mousedown', onAvatarOutsideClick))
+onUnmounted(() => {
+  document.removeEventListener('mousedown', onAvatarOutsideClick)
+  stopCamera()
+})
 
 const handleAvatarFile = async (e: Event) => {
   const file = (e.target as HTMLInputElement).files?.[0]
@@ -61,6 +72,92 @@ const handleAvatarFile = async (e: Event) => {
   } finally {
     isUploadingAvatar.value = false
   }
+}
+
+const openCamera = async () => {
+  showAvatarMenu.value = false
+
+  // На мобильных устройствах используем input с capture
+  if (isMobileDevice()) {
+    cameraInputRef.value?.click()
+    return
+  }
+
+  // На desktop используем MediaDevices API
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: false
+    })
+
+    showCameraCapture.value = true
+
+    // Ждём следующий тик для рендера video элемента
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    if (videoRef.value) {
+      videoRef.value.srcObject = mediaStream
+      await videoRef.value.play()
+    }
+  } catch (err) {
+    console.error('Ошибка доступа к камере:', err)
+    avatarError.value = 'Не удалось получить доступ к камере'
+    setTimeout(() => { avatarError.value = null }, 3000)
+  }
+}
+
+const capturePhoto = async () => {
+  if (!videoRef.value || !canvasRef.value) return
+
+  const video = videoRef.value
+  const canvas = canvasRef.value
+
+  // Устанавливаем размеры canvas равными видео
+  canvas.width = video.videoWidth
+  canvas.height = video.videoHeight
+
+  // Рисуем текущий кадр видео на canvas
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+
+  // Конвертируем canvas в blob
+  canvas.toBlob(async (blob) => {
+    if (!blob) return
+
+    stopCamera()
+
+    // Создаём File из blob
+    const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' })
+
+    // Загружаем
+    isUploadingAvatar.value = true
+    avatarError.value = null
+    try {
+      const res = await apiClient.uploadAvatar(file)
+      if (authStore.user) {
+        authStore.user.avatar_url = res.data.avatar_url
+        localStorage.setItem('user', JSON.stringify(authStore.user))
+      }
+    } catch {
+      avatarError.value = 'Не удалось загрузить фото'
+      setTimeout(() => { avatarError.value = null }, 3000)
+    } finally {
+      isUploadingAvatar.value = false
+    }
+  }, 'image/jpeg', 0.9)
+}
+
+const stopCamera = () => {
+  if (mediaStream) {
+    mediaStream.getTracks().forEach(track => track.stop())
+    mediaStream = null
+  }
+  if (videoRef.value) {
+    videoRef.value.srcObject = null
+  }
+  showCameraCapture.value = false
 }
 
 const requestDeleteAvatar = () => {
@@ -450,7 +547,7 @@ function formatDate(iso: string): string {
                 <button
                   type="button"
                   class="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-t border-gray-100"
-                  @click="cameraInputRef?.click()"
+                  @click="openCamera"
                 >
                   <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -1048,6 +1145,73 @@ function formatDate(iso: string): string {
             </div>
           </div>
         </Transition>
+      </div>
+    </Transition>
+
+    <!-- Модальное окно камеры -->
+    <Transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition duration-150 ease-in"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
+      <div
+        v-if="showCameraCapture"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black px-4"
+      >
+        <div class="w-full max-w-2xl">
+          <!-- Видео предпросмотр -->
+          <div class="relative bg-black rounded-2xl overflow-hidden shadow-2xl">
+            <video
+              ref="videoRef"
+              autoplay
+              playsinline
+              class="w-full h-auto"
+            ></video>
+
+            <!-- Скрытый canvas для захвата фото -->
+            <canvas ref="canvasRef" class="hidden"></canvas>
+
+            <!-- Кнопки управления -->
+            <div class="absolute bottom-0 left-0 right-0 p-6 bg-linear-to-t from-black/80 to-transparent">
+              <div class="flex items-center justify-center gap-4">
+                <!-- Кнопка отмены -->
+                <button
+                  type="button"
+                  class="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30
+                         flex items-center justify-center transition-colors"
+                  @click="stopCamera"
+                >
+                  <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                </button>
+
+                <!-- Кнопка съёмки -->
+                <button
+                  type="button"
+                  class="w-16 h-16 rounded-full bg-white hover:bg-gray-100
+                         flex items-center justify-center transition-all shadow-lg
+                         ring-4 ring-white/30"
+                  @click="capturePhoto"
+                >
+                  <svg class="w-8 h-8 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  </svg>
+                </button>
+              </div>
+
+              <!-- Подсказка -->
+              <p class="text-center text-white/80 text-sm mt-4">
+                Нажмите на круглую кнопку, чтобы сделать фото
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </Transition>
 
