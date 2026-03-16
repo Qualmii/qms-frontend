@@ -8,57 +8,57 @@ export const STATUS_CONFIG: Record<string, StatusConfig> = {
   online: {
     iconPath: '/src/assets/images/statuses/online.webp',
     dotColor: 'bg-green-500',
-    bgHover: 'hover:bg-green-50',
+    bgHover: 'hover:bg-green-50 dark:hover:bg-green-900/30',
   },
   chatty: {
     iconPath: '/src/assets/images/statuses/chatty.webp',
     dotColor: 'bg-green-400',
-    bgHover: 'hover:bg-green-50',
+    bgHover: 'hover:bg-green-50 dark:hover:bg-green-900/30',
   },
   away: {
     iconPath: '/src/assets/images/statuses/away.webp',
     dotColor: 'bg-yellow-400',
-    bgHover: 'hover:bg-yellow-50',
+    bgHover: 'hover:bg-yellow-50 dark:hover:bg-yellow-900/30',
   },
   home: {
     iconPath: '/src/assets/images/statuses/home.webp',
     dotColor: 'bg-blue-400',
-    bgHover: 'hover:bg-blue-50',
+    bgHover: 'hover:bg-blue-50 dark:hover:bg-blue-900/30',
   },
   work: {
     iconPath: '/src/assets/images/statuses/work.webp',
     dotColor: 'bg-blue-600',
-    bgHover: 'hover:bg-blue-50',
+    bgHover: 'hover:bg-blue-50 dark:hover:bg-blue-900/30',
   },
   eating: {
     iconPath: '/src/assets/images/statuses/eating.webp',
     dotColor: 'bg-orange-400',
-    bgHover: 'hover:bg-orange-50',
+    bgHover: 'hover:bg-orange-50 dark:hover:bg-orange-900/30',
   },
   angry: {
     iconPath: '/src/assets/images/statuses/angry.webp',
     dotColor: 'bg-red-500',
-    bgHover: 'hover:bg-red-50',
+    bgHover: 'hover:bg-red-50 dark:hover:bg-red-900/30',
   },
   depressed: {
     iconPath: '/src/assets/images/statuses/depressed.webp',
     dotColor: 'bg-purple-400',
-    bgHover: 'hover:bg-purple-50',
+    bgHover: 'hover:bg-purple-50 dark:hover:bg-purple-900/30',
   },
   busy: {
     iconPath: '/src/assets/images/statuses/busy.webp',
     dotColor: 'bg-red-600',
-    bgHover: 'hover:bg-red-50',
+    bgHover: 'hover:bg-red-50 dark:hover:bg-red-900/30',
   },
   unavailable: {
     iconPath: '/src/assets/images/statuses/unavailable.webp',
     dotColor: 'bg-gray-400',
-    bgHover: 'hover:bg-gray-100',
+    bgHover: 'hover:bg-gray-100 dark:hover:bg-gray-700',
   },
   do_not_disturb: {
     iconPath: '/src/assets/images/statuses/do_not_diturb.webp',
     dotColor: 'bg-gray-600',
-    bgHover: 'hover:bg-gray-100',
+    bgHover: 'hover:bg-gray-100 dark:hover:bg-gray-700',
   },
 }
 
