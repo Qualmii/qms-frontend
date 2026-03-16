@@ -159,7 +159,7 @@ const goToProfile = () => {
     >
       <div
         v-if="isOpen"
-        class="absolute left-0 top-full mt-1 z-50 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+        class="absolute left-0 top-full mt-1 z-50 w-74 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
       >
         <!-- Заголовок -->
         <div class="px-3 py-2 bg-gray-50 dark:bg-gray-700 border-b border-gray-100 dark:border-gray-600">
